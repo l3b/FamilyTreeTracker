@@ -32,9 +32,15 @@ export default function GedcomUpload({ onClose }: GedcomUploadProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/family-members"] });
       queryClient.invalidateQueries({ queryKey: ["/api/family-documents"] });
       onClose();
+      
+      const stats = [];
+      if (data.importedCount > 0) stats.push(`${data.importedCount} جديد`);
+      if (data.updatedCount > 0) stats.push(`${data.updatedCount} محدث`);
+      if (data.skippedCount > 0) stats.push(`${data.skippedCount} موجود مسبقاً`);
+      
       toast({
         title: "تم الاستيراد بنجاح",
-        description: `تم استيراد ${data.importedCount} فرد من أصل ${data.totalIndividuals} في ملف GEDCOM`,
+        description: `${stats.join('، ')} من أصل ${data.totalIndividuals} فرد في ملف GEDCOM`,
       });
     },
     onError: () => {
