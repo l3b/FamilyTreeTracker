@@ -1,0 +1,169 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+
+  /* Heritage colors */
+  --heritage-brown: hsl(20, 67%, 27%);
+  --heritage-green: hsl(149, 43%, 37%);
+  --heritage-gold: hsl(43, 74%, 45%);
+  --heritage-beige: hsl(60, 29%, 94%);
+  --heritage-dark: hsl(210, 29%, 24%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-arabic antialiased bg-heritage-beige text-foreground;
+    direction: rtl;
+  }
+
+  html {
+    direction: rtl;
+  }
+
+  /* RTL-specific styles */
+  .ltr {
+    direction: ltr;
+  }
+
+  .rtl {
+    direction: rtl;
+  }
+}
+
+@layer utilities {
+  .font-arabic {
+    font-family: 'Noto Sans Arabic', sans-serif;
+  }
+
+  .heritage-brown {
+    color: var(--heritage-brown);
+  }
+
+  .heritage-green {
+    color: var(--heritage-green);
+  }
+
+  .heritage-gold {
+    color: var(--heritage-gold);
+  }
+
+  .heritage-beige {
+    color: var(--heritage-beige);
+  }
+
+  .heritage-dark {
+    color: var(--heritage-dark);
+  }
+
+  .bg-heritage-brown {
+    background-color: var(--heritage-brown);
+  }
+
+  .bg-heritage-green {
+    background-color: var(--heritage-green);
+  }
+
+  .bg-heritage-gold {
+    background-color: var(--heritage-gold);
+  }
+
+  .bg-heritage-beige {
+    background-color: var(--heritage-beige);
+  }
+
+  .bg-heritage-dark {
+    background-color: var(--heritage-dark);
+  }
+
+  .border-heritage-brown {
+    border-color: var(--heritage-brown);
+  }
+
+  .border-heritage-green {
+    border-color: var(--heritage-green);
+  }
+
+  .border-heritage-gold {
+    border-color: var(--heritage-gold);
+  }
+
+  .hover\:text-heritage-brown:hover {
+    color: var(--heritage-brown);
+  }
+
+  .hover\:text-heritage-green:hover {
+    color: var(--heritage-green);
+  }
+
+  .hover\:text-heritage-gold:hover {
+    color: var(--heritage-gold);
+  }
+
+  .hover\:bg-heritage-brown:hover {
+    background-color: var(--heritage-brown);
+  }
+
+  .hover\:bg-heritage-green:hover {
+    background-color: var(--heritage-green);
+  }
+
+  .hover\:bg-heritage-gold:hover {
+    background-color: var(--heritage-gold);
+  }
+
+  .family-tree-connector {
+    border-left: 2px solid var(--heritage-brown);
+    border-bottom: 2px solid var(--heritage-brown);
+  }
+}
