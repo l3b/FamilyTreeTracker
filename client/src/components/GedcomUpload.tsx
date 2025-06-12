@@ -28,13 +28,13 @@ export default function GedcomUpload({ onClose }: GedcomUploadProps) {
       if (!response.ok) throw new Error("Failed to import GEDCOM file");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/family-members"] });
       queryClient.invalidateQueries({ queryKey: ["/api/family-documents"] });
       onClose();
       toast({
         title: "تم الاستيراد بنجاح",
-        description: "تم استيراد ملف GEDCOM وإضافة أفراد العائلة",
+        description: `تم استيراد ${data.importedCount} فرد من أصل ${data.totalIndividuals} في ملف GEDCOM`,
       });
     },
     onError: () => {

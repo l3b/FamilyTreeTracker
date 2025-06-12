@@ -15,6 +15,227 @@ import {
   insertFamilyInvitationSchema,
 } from "@shared/schema";
 
+// Import GEDCOM parser - we'll create a server-side version
+interface GedcomIndividual {
+  id: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  gender?: string;
+  birth?: string;
+  death?: string;
+  birthPlace?: string;
+  deathPlace?: string;
+  occupation?: string;
+  father?: string;
+  mother?: string;
+  spouse?: string[];
+  children?: string[];
+}
+
+interface GedcomFamily {
+  id: string;
+  husband?: string;
+  wife?: string;
+  children?: string[];
+  marriageDate?: string;
+  marriagePlace?: string;
+}
+
+interface ParsedGedcom {
+  individuals: GedcomIndividual[];
+  families: GedcomFamily[];
+  sources: any[];
+}
+
+function parseGedcom(gedcomText: string): ParsedGedcom {
+  const lines = gedcomText.split('\n').map(line => line.trim()).filter(line => line);
+  
+  const individuals: GedcomIndividual[] = [];
+  const families: GedcomFamily[] = [];
+  const sources: any[] = [];
+  
+  let currentRecord: any = null;
+  let currentType: 'INDI' | 'FAM' | 'SOUR' | null = null;
+  let currentSubRecord: string | null = null;
+
+  for (const line of lines) {
+    const parts = line.split(' ');
+    const level = parseInt(parts[0]);
+    const tag = parts[1];
+    const value = parts.slice(2).join(' ');
+
+    // Start of a new record
+    if (level === 0) {
+      // Save previous record
+      if (currentRecord && currentType) {
+        switch (currentType) {
+          case 'INDI':
+            individuals.push(currentRecord);
+            break;
+          case 'FAM':
+            families.push(currentRecord);
+            break;
+          case 'SOUR':
+            sources.push(currentRecord);
+            break;
+        }
+      }
+
+      // Start new record
+      if (tag === 'INDI') {
+        currentType = 'INDI';
+        currentRecord = { id: parts[1].replace(/[@]/g, ''), spouse: [], children: [] };
+      } else if (tag === 'FAM') {
+        currentType = 'FAM';
+        currentRecord = { id: parts[1].replace(/[@]/g, ''), children: [] };
+      } else if (tag === 'SOUR') {
+        currentType = 'SOUR';
+        currentRecord = { id: parts[1].replace(/[@]/g, '') };
+      } else {
+        currentType = null;
+        currentRecord = null;
+      }
+      currentSubRecord = null;
+    }
+    // Level 1 tags
+    else if (level === 1 && currentRecord) {
+      currentSubRecord = tag;
+      
+      switch (tag) {
+        case 'NAME':
+          parseNameField(currentRecord, value);
+          break;
+        case 'SEX':
+          currentRecord.gender = value === 'M' ? 'ذكر' : value === 'F' ? 'أنثى' : value;
+          break;
+        case 'BIRT':
+          currentSubRecord = 'BIRT';
+          break;
+        case 'DEAT':
+          currentSubRecord = 'DEAT';
+          break;
+        case 'OCCU':
+          currentRecord.occupation = value;
+          break;
+        case 'HUSB':
+          currentRecord.husband = value.replace(/[@]/g, '');
+          break;
+        case 'WIFE':
+          currentRecord.wife = value.replace(/[@]/g, '');
+          break;
+        case 'CHIL':
+          currentRecord.children.push(value.replace(/[@]/g, ''));
+          break;
+      }
+    }
+    // Level 2 tags
+    else if (level === 2 && currentRecord && currentSubRecord) {
+      switch (currentSubRecord) {
+        case 'BIRT':
+          if (tag === 'DATE') {
+            currentRecord.birth = parseDate(value);
+          } else if (tag === 'PLAC') {
+            currentRecord.birthPlace = value;
+          }
+          break;
+        case 'DEAT':
+          if (tag === 'DATE') {
+            currentRecord.death = parseDate(value);
+          } else if (tag === 'PLAC') {
+            currentRecord.deathPlace = value;
+          }
+          break;
+      }
+    }
+  }
+
+  // Save the last record
+  if (currentRecord && currentType) {
+    switch (currentType) {
+      case 'INDI':
+        individuals.push(currentRecord);
+        break;
+      case 'FAM':
+        families.push(currentRecord);
+        break;
+      case 'SOUR':
+        sources.push(currentRecord);
+        break;
+    }
+  }
+
+  return { individuals, families, sources };
+}
+
+function parseNameField(individual: GedcomIndividual, nameValue: string) {
+  // Parse name in format "FirstName /LastName/" or "FirstName LastName"
+  const nameParts = nameValue.split('/');
+  
+  if (nameParts.length >= 3) {
+    // Format: "FirstName /LastName/"
+    individual.firstName = nameParts[0].trim();
+    individual.lastName = nameParts[1].trim();
+    individual.name = `${individual.firstName} ${individual.lastName}`;
+  } else {
+    // Format: "FirstName LastName" or single name
+    const parts = nameValue.trim().split(' ');
+    if (parts.length >= 2) {
+      individual.firstName = parts[0];
+      individual.lastName = parts.slice(1).join(' ');
+    } else {
+      individual.firstName = parts[0] || '';
+      individual.lastName = '';
+    }
+    individual.name = nameValue.trim();
+  }
+}
+
+function parseDate(dateValue: string): string {
+  // Simple date parsing for GEDCOM date formats
+  const cleanDate = dateValue.replace(/^(ABT|EST|CAL|AFT|BEF)\s+/i, '').trim();
+  
+  // Try to parse different date formats
+  const datePatterns = [
+    /(\d{1,2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\d{4})/i,
+    /(\d{4})/,
+    /(\d{1,2})\/(\d{1,2})\/(\d{4})/,
+    /(\d{4})-(\d{1,2})-(\d{1,2})/
+  ];
+
+  for (const pattern of datePatterns) {
+    const match = cleanDate.match(pattern);
+    if (match) {
+      if (pattern === datePatterns[0]) {
+        // DD MMM YYYY format
+        const monthMap: { [key: string]: string } = {
+          'JAN': '01', 'FEB': '02', 'MAR': '03', 'APR': '04',
+          'MAY': '05', 'JUN': '06', 'JUL': '07', 'AUG': '08',
+          'SEP': '09', 'OCT': '10', 'NOV': '11', 'DEC': '12'
+        };
+        const day = match[1].padStart(2, '0');
+        const month = monthMap[match[2].toUpperCase()];
+        const year = match[3];
+        return `${year}-${month}-${day}`;
+      } else if (pattern === datePatterns[1]) {
+        // YYYY format
+        return `${match[1]}-01-01`;
+      } else if (pattern === datePatterns[2]) {
+        // MM/DD/YYYY format
+        const month = match[1].padStart(2, '0');
+        const day = match[2].padStart(2, '0');
+        const year = match[3];
+        return `${year}-${month}-${day}`;
+      } else if (pattern === datePatterns[3]) {
+        // YYYY-MM-DD format
+        return cleanDate;
+      }
+    }
+  }
+
+  return cleanDate; // Return as-is if no pattern matches
+}
+
 // Setup multer for file uploads
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
@@ -214,12 +435,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No GEDCOM file uploaded" });
       }
 
-      // TODO: Implement GEDCOM parsing
-      // For now, just store the file
+      // Read and parse GEDCOM file
+      const gedcomContent = await fs.promises.readFile(req.file.path, 'utf-8');
+      const parsedData = parseGedcom(gedcomContent);
+      
+      console.log(`Parsed GEDCOM: ${parsedData.individuals.length} individuals, ${parsedData.families.length} families`);
+      
+      // Convert and import family members
+      let importedCount = 0;
+      const importedMembers = [];
+      
+      for (const individual of parsedData.individuals) {
+        try {
+          const memberData: any = {
+            userId,
+            firstName: individual.firstName || individual.name?.split(' ')[0] || 'غير محدد',
+            lastName: individual.lastName || individual.name?.split(' ').slice(1).join(' ') || 'غير محدد',
+            arabicName: individual.name || '',
+            birthDate: individual.birth ? new Date(individual.birth) : null,
+            deathDate: individual.death ? new Date(individual.death) : null,
+            gender: individual.gender || null,
+            birthPlace: individual.birthPlace || null,
+            occupation: individual.occupation || null,
+            notes: `استُورد من ملف GEDCOM - معرف: ${individual.id}`,
+          };
+
+          // Remove null values to avoid database issues
+          Object.keys(memberData).forEach(key => {
+            if (memberData[key] === null || memberData[key] === '') {
+              delete memberData[key];
+            }
+          });
+
+          const member = await storage.createFamilyMember(memberData);
+          importedMembers.push(member);
+          importedCount++;
+        } catch (memberError) {
+          console.error(`Error importing individual ${individual.id}:`, memberError);
+        }
+      }
+
+      // Store the GEDCOM file as a document for reference
       const documentData = {
         userId,
-        title: "GEDCOM Import",
-        description: "Imported GEDCOM file",
+        title: `GEDCOM Import - ${req.file.originalname}`,
+        description: `استُورد ${importedCount} فرد من ملف GEDCOM`,
         fileUrl: `/uploads/${req.file.filename}`,
         fileName: req.file.originalname,
         fileSize: req.file.size,
@@ -228,10 +488,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const document = await storage.createFamilyDocument(documentData);
-      res.json({ message: "GEDCOM file imported successfully", document });
+      
+      res.json({ 
+        message: "GEDCOM file imported successfully", 
+        document,
+        importedCount,
+        totalIndividuals: parsedData.individuals.length,
+        importedMembers: importedMembers.slice(0, 5) // Return first 5 for preview
+      });
     } catch (error) {
       console.error("Error importing GEDCOM:", error);
-      res.status(500).json({ message: "Failed to import GEDCOM file" });
+      res.status(500).json({ message: "Failed to import GEDCOM file", error: (error as Error).message });
     }
   });
 
