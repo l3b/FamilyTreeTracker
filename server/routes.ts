@@ -59,11 +59,37 @@ function parseGedcom(gedcomText: string): ParsedGedcom {
   let currentType: 'INDI' | 'FAM' | 'SOUR' | null = null;
   let currentSubRecord: string | null = null;
 
-  for (const line of lines) {
-    const parts = line.split(' ');
-    const level = parseInt(parts[0]);
-    const tag = parts[1];
-    const value = parts.slice(2).join(' ');
+  console.log(`Processing ${lines.length} lines from GEDCOM file`);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line || line.length < 3) continue;
+
+    // Parse level, tag, and value more carefully
+    const spaceIndex = line.indexOf(' ');
+    if (spaceIndex === -1) continue;
+
+    const level = parseInt(line.substring(0, spaceIndex));
+    if (isNaN(level)) continue;
+
+    const remainder = line.substring(spaceIndex + 1);
+    const secondSpaceIndex = remainder.indexOf(' ');
+    
+    let tag: string;
+    let value: string;
+    
+    if (secondSpaceIndex === -1) {
+      tag = remainder;
+      value = '';
+    } else {
+      tag = remainder.substring(0, secondSpaceIndex);
+      value = remainder.substring(secondSpaceIndex + 1);
+    }
+
+    // Debug first few lines
+    if (i < 10) {
+      console.log(`Line ${i}: Level=${level}, Tag="${tag}", Value="${value}"`);
+    }
 
     // Start of a new record
     if (level === 0) {
@@ -82,16 +108,25 @@ function parseGedcom(gedcomText: string): ParsedGedcom {
         }
       }
 
-      // Start new record
-      if (tag === 'INDI') {
-        currentType = 'INDI';
-        currentRecord = { id: parts[1].replace(/[@]/g, ''), spouse: [], children: [] };
-      } else if (tag === 'FAM') {
-        currentType = 'FAM';
-        currentRecord = { id: parts[1].replace(/[@]/g, ''), children: [] };
-      } else if (tag === 'SOUR') {
-        currentType = 'SOUR';
-        currentRecord = { id: parts[1].replace(/[@]/g, '') };
+      // Start new record - check if tag starts with @ (indicating ID)
+      if (tag.startsWith('@') && tag.endsWith('@')) {
+        const recordId = tag.replace(/[@]/g, '');
+        if (value === 'INDI') {
+          currentType = 'INDI';
+          currentRecord = { id: recordId, spouse: [], children: [] };
+          console.log(`Found individual: ${recordId}`);
+        } else if (value === 'FAM') {
+          currentType = 'FAM';
+          currentRecord = { id: recordId, children: [] };
+          console.log(`Found family: ${recordId}`);
+        } else if (value === 'SOUR') {
+          currentType = 'SOUR';
+          currentRecord = { id: recordId };
+          console.log(`Found source: ${recordId}`);
+        } else {
+          currentType = null;
+          currentRecord = null;
+        }
       } else {
         currentType = null;
         currentRecord = null;
@@ -119,13 +154,19 @@ function parseGedcom(gedcomText: string): ParsedGedcom {
           currentRecord.occupation = value;
           break;
         case 'HUSB':
-          currentRecord.husband = value.replace(/[@]/g, '');
+          if (currentRecord.children !== undefined) { // This is a family record
+            currentRecord.husband = value.replace(/[@]/g, '');
+          }
           break;
         case 'WIFE':
-          currentRecord.wife = value.replace(/[@]/g, '');
+          if (currentRecord.children !== undefined) { // This is a family record
+            currentRecord.wife = value.replace(/[@]/g, '');
+          }
           break;
         case 'CHIL':
-          currentRecord.children.push(value.replace(/[@]/g, ''));
+          if (currentRecord.children !== undefined) { // This is a family record
+            currentRecord.children.push(value.replace(/[@]/g, ''));
+          }
           break;
       }
     }
@@ -163,6 +204,11 @@ function parseGedcom(gedcomText: string): ParsedGedcom {
         sources.push(currentRecord);
         break;
     }
+  }
+
+  console.log(`Parsed GEDCOM: ${individuals.length} individuals, ${families.length} families`);
+  if (individuals.length > 0) {
+    console.log('Sample individual:', individuals[0]);
   }
 
   return { individuals, families, sources };
