@@ -487,17 +487,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Parsed GEDCOM: ${parsedData.individuals.length} individuals, ${parsedData.families.length} families`);
       
+      // Get existing family members to check for duplicates
+      const existingMembers = await storage.getFamilyMembers(userId);
+      
       // Convert and import family members
       let importedCount = 0;
+      let skippedCount = 0;
+      let updatedCount = 0;
       const importedMembers = [];
       
       for (const individual of parsedData.individuals) {
         try {
+          const firstName = individual.firstName || individual.name?.split(' ')[0] || 'غير محدد';
+          const lastName = individual.lastName || individual.name?.split(' ').slice(1).join(' ') || 'غير محدد';
+          const fullName = individual.name || `${firstName} ${lastName}`;
+          
+          // Check if member already exists by name or similar birth date
+          const existingMember = existingMembers.find(member => 
+            (member.firstName === firstName && member.lastName === lastName) ||
+            (member.arabicName === fullName) ||
+            (individual.birth && member.birthDate && 
+             Math.abs(new Date(individual.birth).getTime() - member.birthDate.getTime()) < 86400000) // Within 1 day
+          );
+
+          if (existingMember) {
+            // Update existing member with GEDCOM data if it has more information
+            const hasNewInfo = individual.birth || individual.death || individual.birthPlace || individual.occupation;
+            if (hasNewInfo && !existingMember.notes?.includes('GEDCOM')) {
+              const updateData: any = {
+                notes: existingMember.notes 
+                  ? `${existingMember.notes} | محدث من GEDCOM - معرف: ${individual.id}`
+                  : `محدث من GEDCOM - معرف: ${individual.id}`,
+              };
+              
+              if (individual.birth && !existingMember.birthDate) {
+                updateData.birthDate = new Date(individual.birth);
+              }
+              if (individual.death && !existingMember.deathDate) {
+                updateData.deathDate = new Date(individual.death);
+              }
+              if (individual.birthPlace && !existingMember.birthPlace) {
+                updateData.birthPlace = individual.birthPlace;
+              }
+              if (individual.occupation && !existingMember.occupation) {
+                updateData.occupation = individual.occupation;
+              }
+              if (individual.gender && !existingMember.gender) {
+                updateData.gender = individual.gender;
+              }
+
+              await storage.updateFamilyMember(existingMember.id, updateData);
+              updatedCount++;
+            } else {
+              skippedCount++;
+            }
+            continue;
+          }
+
+          // Create new member
           const memberData: any = {
             userId,
-            firstName: individual.firstName || individual.name?.split(' ')[0] || 'غير محدد',
-            lastName: individual.lastName || individual.name?.split(' ').slice(1).join(' ') || 'غير محدد',
-            arabicName: individual.name || '',
+            firstName,
+            lastName,
+            arabicName: fullName,
             birthDate: individual.birth ? new Date(individual.birth) : null,
             deathDate: individual.death ? new Date(individual.death) : null,
             gender: individual.gender || null,
@@ -525,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const documentData = {
         userId,
         title: `GEDCOM Import - ${req.file.originalname}`,
-        description: `استُورد ${importedCount} فرد من ملف GEDCOM`,
+        description: `استُورد ${importedCount} جديد، حُدث ${updatedCount}، تم تخطي ${skippedCount} من أصل ${parsedData.individuals.length} فرد`,
         fileUrl: `/uploads/${req.file.filename}`,
         fileName: req.file.originalname,
         fileSize: req.file.size,
@@ -539,6 +591,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "GEDCOM file imported successfully", 
         document,
         importedCount,
+        updatedCount,
+        skippedCount,
         totalIndividuals: parsedData.individuals.length,
         importedMembers: importedMembers.slice(0, 5) // Return first 5 for preview
       });
