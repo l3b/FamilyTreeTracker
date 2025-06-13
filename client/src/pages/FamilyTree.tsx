@@ -12,12 +12,12 @@ import CompactFamilyView from "@/components/CompactFamilyView";
 import GedcomUpload from "@/components/GedcomUpload";
 import { apiRequest } from "@/lib/queryClient";
 
-type TreeView = 'family' | 'pedigree' | 'fan';
+type TreeView = 'compact' | 'family' | 'pedigree' | 'fan';
 
 export default function FamilyTree() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showGedcomUpload, setShowGedcomUpload] = useState(false);
-  const [currentView, setCurrentView] = useState<TreeView>('family');
+  const [currentView, setCurrentView] = useState<TreeView>('compact');
   const [relationshipContext, setRelationshipContext] = useState<{ type: string; relatedTo?: number } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -73,6 +73,14 @@ export default function FamilyTree() {
 
   const renderCurrentView = () => {
     switch (currentView) {
+      case 'compact':
+        return (
+          <CompactFamilyView 
+            members={members} 
+            onDeleteMember={(id) => deleteMutation.mutate(id)}
+            onAddMember={handleAddMember}
+          />
+        );
       case 'family':
         return (
           <FamilyView 
@@ -116,6 +124,17 @@ export default function FamilyTree() {
 
         {/* View Switcher - MyHeritage Style */}
         <div className="flex justify-center gap-2 mb-6">
+          <Button 
+            onClick={() => setCurrentView('compact')}
+            variant={currentView === 'compact' ? 'default' : 'outline'}
+            className={currentView === 'compact' 
+              ? 'bg-heritage-brown hover:bg-heritage-dark text-white' 
+              : 'border-heritage-brown text-heritage-brown hover:bg-heritage-light'
+            }
+          >
+            <i className="fas fa-compress-alt mr-2"></i>
+            العرض المبسط
+          </Button>
           <Button 
             onClick={() => setCurrentView('family')}
             variant={currentView === 'family' ? 'default' : 'outline'}
@@ -198,7 +217,6 @@ export default function FamilyTree() {
         <AddMemberForm
           onClose={handleCloseAddForm}
           existingMembers={members}
-          relationshipContext={relationshipContext}
         />
       )}
 
