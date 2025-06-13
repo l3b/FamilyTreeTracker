@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import AddMemberForm from "@/components/AddMemberForm";
 import FamilyTreeView from "@/components/FamilyTreeView";
 import FamilyView from "@/components/FamilyView";
+import CompactFamilyView from "@/components/CompactFamilyView";
 import GedcomUpload from "@/components/GedcomUpload";
 import { apiRequest } from "@/lib/queryClient";
 
