@@ -13,6 +13,7 @@ export interface GedcomIndividual {
   mother?: string;
   spouse?: string[];
   children?: string[];
+  photos?: string[]; // OBJE references for multimedia
 }
 
 export interface GedcomFamily {
@@ -136,6 +137,11 @@ export function parseGedcom(gedcomText: string): ParsedGedcom {
           break;
         case 'PUBL':
           currentRecord.publication = value;
+          break;
+        case 'OBJE':
+          // Multimedia object reference
+          if (!currentRecord.photos) currentRecord.photos = [];
+          currentRecord.photos.push(value.replace(/[@]/g, ''));
           break;
       }
     }
@@ -284,9 +290,11 @@ function processRelationships(individuals: GedcomIndividual[], families: GedcomF
         const family = familyMap.get(familyId);
         if (family) {
           if (family.husband && family.husband !== individual.id) {
+            if (!individual.spouse) individual.spouse = [];
             individual.spouse.push(family.husband);
           }
           if (family.wife && family.wife !== individual.id) {
+            if (!individual.spouse) individual.spouse = [];
             individual.spouse.push(family.wife);
           }
           // Add children
@@ -391,6 +399,7 @@ export function convertToFamilyMembers(individuals: GedcomIndividual[]): any[] {
     gender: individual.gender || '',
     birthPlace: individual.birthPlace || '',
     occupation: individual.occupation || '',
-    notes: `استُورد من ملف GEDCOM - معرف: ${individual.id}`,
+    profileImageUrl: individual.photos && individual.photos.length > 0 ? individual.photos[0] : null,
+    notes: `استُورد من ملف GEDCOM - معرف: ${individual.id}${individual.photos ? ` - صور: ${individual.photos.length}` : ''}`,
   }));
 }
