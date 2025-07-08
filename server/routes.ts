@@ -13,7 +13,10 @@ import {
   insertFamilyDocumentSchema,
   insertFamilyPhotoSchema,
   insertFamilyInvitationSchema,
+  familyMembers
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // Import GEDCOM parser - we'll create a server-side version
 interface GedcomIndividual {
@@ -497,9 +500,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let clearedCount = 0;
       if (clearExisting && existingMembers.length > 0) {
         console.log(`Clearing ${existingMembers.length} existing family members for fresh import`);
-        for (const member of existingMembers) {
-          await storage.deleteFamilyMember(member.id);
-          clearedCount++;
+        
+        try {
+          // First, clear all relationship references to avoid foreign key conflicts
+          await db.update(familyMembers)
+            .set({ 
+              fatherId: null, 
+              motherId: null, 
+              spouseId: null 
+            })
+            .where(eq(familyMembers.userId, userId));
+          
+          // Then delete all members for this user
+          await db.delete(familyMembers)
+            .where(eq(familyMembers.userId, userId));
+          
+          clearedCount = existingMembers.length;
+        } catch (clearError) {
+          console.error('Error clearing existing members:', clearError);
+          throw new Error('Failed to clear existing family members');
         }
       }
       
