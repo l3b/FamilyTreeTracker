@@ -203,6 +203,17 @@ function parseGedcom(gedcomText: string): ParsedGedcom {
         case 'OCCU':
           currentRecord.occupation = value;
           break;
+        case 'FAMC':
+          // Family as Child - parent family
+          (currentRecord as any).parentFamily = value.replace(/[@]/g, '');
+          console.log(`Set parentFamily for ${currentRecord.name}: ${(currentRecord as any).parentFamily}`);
+          break;
+        case 'FAMS':
+          // Family as Spouse - spouse family
+          if (!(currentRecord as any).spouseFamilies) (currentRecord as any).spouseFamilies = [];
+          (currentRecord as any).spouseFamilies.push(value.replace(/[@]/g, ''));
+          console.log(`Set spouseFamilies for ${currentRecord.name}: ${(currentRecord as any).spouseFamilies}`);
+          break;
         case 'HUSB':
           if (currentRecord.children !== undefined) { // This is a family record
             currentRecord.husband = value.replace(/[@]/g, '');
