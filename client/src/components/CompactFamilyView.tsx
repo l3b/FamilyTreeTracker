@@ -68,12 +68,39 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
   const mainProfile = getMainProfile();
   const currentCenter = propCenterPerson || localCenterPerson || mainProfile;
 
-  // Filter members based on search term
-  const filteredMembers = members.filter(member => 
-    member.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    `${member.firstName} ${member.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Enhanced Arabic name search - includes father's and grandfather's names
+  const getFullArabicName = (member: any) => {
+    if (!member) return '';
+    
+    // Find father
+    const father = members.find(m => m.id === member.fatherId);
+    const grandfather = father ? members.find(m => m.id === father.fatherId) : null;
+    
+    // Build full Arabic name pattern: "الاسم بن الأب بن الجد"
+    let fullName = member.firstName || '';
+    if (father) {
+      fullName += ` بن ${father.firstName}`;
+      if (grandfather) {
+        fullName += ` بن ${grandfather.firstName}`;
+      }
+    }
+    
+    return fullName;
+  };
+
+  // Filter members based on search term - supports Arabic naming patterns
+  const filteredMembers = members.filter(member => {
+    const searchLower = searchTerm.toLowerCase();
+    const fullArabicName = getFullArabicName(member).toLowerCase();
+    
+    return (
+      member.firstName?.toLowerCase().includes(searchLower) ||
+      member.lastName?.toLowerCase().includes(searchLower) ||
+      `${member.firstName} ${member.lastName}`.toLowerCase().includes(searchLower) ||
+      fullArabicName.includes(searchLower) ||
+      member.arabicName?.toLowerCase().includes(searchLower)
+    );
+  });
 
   if (!currentCenter) {
     return (
@@ -231,7 +258,7 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
           <div className="mb-3">
             <Input
               type="text"
-              placeholder="ابحث عن شخص في العائلة..."
+              placeholder="ابحث بالاسم الكامل مثل: عبدالله بن عادل بن عبدالله..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full max-w-md mx-auto text-sm"
@@ -239,28 +266,42 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
             />
           </div>
           
+          {searchTerm && (
+            <div className="text-xs text-heritage-brown mb-2 bg-white rounded px-2 py-1 max-w-md mx-auto">
+              مثال للبحث: اكتب "عبدالله بن عادل" للعثور على عبدالله ابن عادل
+            </div>
+          )}
+          
           <div className="text-xs text-gray-600 mb-2">
             انقر على أي شخص في الشجرة لجعله في المركز • أو استخدم الزر الأزرق 👤 بجانب كل شخص
           </div>
           
           {/* Quick Person Selector */}
           <div className="flex flex-wrap gap-2 justify-center mt-2">
-            {(searchTerm ? filteredMembers : members).slice(0, 8).map((member) => (
-              <button
-                key={member.id}
-                onClick={() => onCenterChange && onCenterChange(member)}
-                className={`px-2 py-1 rounded text-xs transition-all ${
-                  member.id === currentCenter.id
-                    ? 'bg-heritage-brown text-white font-semibold'
-                    : 'bg-white text-heritage-brown border border-heritage-brown hover:bg-heritage-light'
-                }`}
-              >
-                {member.firstName} {member.lastName}
-              </button>
-            ))}
-            {(searchTerm ? filteredMembers : members).length > 8 && (
+            {(searchTerm ? filteredMembers : members).slice(0, 6).map((member) => {
+              const fullArabicName = getFullArabicName(member);
+              const displayName = fullArabicName || `${member.firstName} ${member.lastName}`;
+              
+              return (
+                <button
+                  key={member.id}
+                  onClick={() => onCenterChange && onCenterChange(member)}
+                  className={`px-2 py-1 rounded text-xs transition-all max-w-[200px] ${
+                    member.id === currentCenter.id
+                      ? 'bg-heritage-brown text-white font-semibold'
+                      : 'bg-white text-heritage-brown border border-heritage-brown hover:bg-heritage-light'
+                  }`}
+                  title={displayName}
+                >
+                  <div className="truncate">
+                    {searchTerm ? displayName : `${member.firstName} ${member.lastName}`}
+                  </div>
+                </button>
+              );
+            })}
+            {(searchTerm ? filteredMembers : members).length > 6 && (
               <div className="text-xs text-gray-500 px-2 py-1">
-                +{(searchTerm ? filteredMembers : members).length - 8} أخرى
+                +{(searchTerm ? filteredMembers : members).length - 6} أخرى
               </div>
             )}
           </div>
