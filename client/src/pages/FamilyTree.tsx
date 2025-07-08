@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import AddMemberForm from "@/components/AddMemberForm";
 import FamilyTreeView from "@/components/FamilyTreeView";
 import FamilyView from "@/components/FamilyView";
@@ -19,12 +20,32 @@ export default function FamilyTree() {
   const [showGedcomUpload, setShowGedcomUpload] = useState(false);
   const [currentView, setCurrentView] = useState<TreeView>('compact');
   const [relationshipContext, setRelationshipContext] = useState<{ type: string; relatedTo?: number } | null>(null);
+  const [centerPerson, setCenterPerson] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["/api/family-members"],
   }) as { data: any[], isLoading: boolean };
+
+  // Identify the logged-in user in the family tree and set as center person
+  useEffect(() => {
+    if (user && members.length > 0 && !centerPerson) {
+      // Try to find the user by ID first, then by email
+      const userInTree = members.find(member => 
+        member.userId === user.id || 
+        member.email === user.email
+      );
+      
+      if (userInTree) {
+        setCenterPerson(userInTree);
+      } else {
+        // If user not found in tree, center on first member
+        setCenterPerson(members[0]);
+      }
+    }
+  }, [user, members, centerPerson]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -79,6 +100,8 @@ export default function FamilyTree() {
             members={members} 
             onDeleteMember={(id) => deleteMutation.mutate(id)}
             onAddMember={handleAddMember}
+            centerPerson={centerPerson}
+            onCenterChange={setCenterPerson}
           />
         );
       case 'family':
@@ -87,6 +110,8 @@ export default function FamilyTree() {
             members={members} 
             onDeleteMember={(id) => deleteMutation.mutate(id)}
             onAddMember={handleAddMember}
+            centerPerson={centerPerson}
+            onCenterChange={setCenterPerson}
           />
         );
       case 'pedigree':
