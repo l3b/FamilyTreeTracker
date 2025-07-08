@@ -495,7 +495,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let skippedCount = 0;
       let updatedCount = 0;
       const importedMembers = [];
+      const gedcomToDbMap = new Map(); // Map GEDCOM IDs to database IDs
       
+      // First pass: Create all individuals without relationships
       for (const individual of parsedData.individuals) {
         try {
           const firstName = individual.firstName || individual.name?.split(' ')[0] || 'غير محدد';
@@ -541,6 +543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } else {
               skippedCount++;
             }
+            gedcomToDbMap.set(individual.id, existingMember.id);
             continue;
           }
 
@@ -567,9 +570,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const member = await storage.createFamilyMember(memberData);
           importedMembers.push(member);
+          gedcomToDbMap.set(individual.id, member.id);
           importedCount++;
         } catch (memberError) {
           console.error(`Error importing individual ${individual.id}:`, memberError);
+        }
+      }
+
+      // Second pass: Update relationships
+      for (const individual of parsedData.individuals) {
+        try {
+          const dbId = gedcomToDbMap.get(individual.id);
+          if (!dbId) continue;
+
+          const updateData: any = {};
+          
+          // Set father relationship
+          if (individual.father && gedcomToDbMap.has(individual.father)) {
+            updateData.fatherId = gedcomToDbMap.get(individual.father);
+          }
+          
+          // Set mother relationship
+          if (individual.mother && gedcomToDbMap.has(individual.mother)) {
+            updateData.motherId = gedcomToDbMap.get(individual.mother);
+          }
+          
+          // Set spouse relationship (take first spouse if multiple)
+          if (individual.spouse && individual.spouse.length > 0 && gedcomToDbMap.has(individual.spouse[0])) {
+            updateData.spouseId = gedcomToDbMap.get(individual.spouse[0]);
+          }
+
+          // Update if there are relationships to set
+          if (Object.keys(updateData).length > 0) {
+            await storage.updateFamilyMember(dbId, updateData);
+          }
+        } catch (relationshipError) {
+          console.error(`Error updating relationships for individual ${individual.id}:`, relationshipError);
         }
       }
 
