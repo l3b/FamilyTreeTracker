@@ -157,15 +157,27 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
           )}
           
           {!isCenter && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteMember(person.id);
-              }}
-              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
-            >
-              <i className="fas fa-times"></i>
-            </button>
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteMember(person.id);
+                }}
+                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCenterChange && onCenterChange(person);
+                }}
+                className="absolute -top-1 -left-1 bg-heritage-brown text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                title="اجعلني في المركز"
+              >
+                <i className="fas fa-user"></i>
+              </button>
+            </>
           )}
         </div>
         
@@ -197,6 +209,40 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
         <p className="text-gray-600 text-sm">
           {currentCenter.firstName} {currentCenter.lastName} في المركز
         </p>
+      </div>
+
+      {/* How to Select Yourself */}
+      <div className="bg-gradient-to-r from-heritage-light to-heritage-beige border border-heritage-brown rounded-lg p-3 mb-4">
+        <div className="text-center">
+          <div className="text-sm font-semibold text-heritage-brown mb-2">
+            اختر نفسك من الشجرة
+          </div>
+          <div className="text-xs text-gray-600 mb-2">
+            انقر على أي شخص في الشجرة لجعله في المركز • أو استخدم الزر الأزرق 👤 بجانب كل شخص
+          </div>
+          
+          {/* Quick Person Selector */}
+          <div className="flex flex-wrap gap-2 justify-center mt-2">
+            {members.slice(0, 8).map((member) => (
+              <button
+                key={member.id}
+                onClick={() => onCenterChange && onCenterChange(member)}
+                className={`px-2 py-1 rounded text-xs transition-all ${
+                  member.id === currentCenter.id
+                    ? 'bg-heritage-brown text-white font-semibold'
+                    : 'bg-white text-heritage-brown border border-heritage-brown hover:bg-heritage-light'
+                }`}
+              >
+                {member.firstName} {member.lastName}
+              </button>
+            ))}
+            {members.length > 8 && (
+              <div className="text-xs text-gray-500 px-2 py-1">
+                +{members.length - 8} أخرى
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Immediate Family - Always Visible */}
