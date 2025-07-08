@@ -5,11 +5,13 @@ interface FamilyViewProps {
   members: any[];
   onDeleteMember: (id: number) => void;
   onAddMember: (relationship: string, relatedTo?: number) => void;
+  centerPerson?: any;
+  onCenterChange?: (person: any) => void;
 }
 
-export default function FamilyView({ members, onDeleteMember, onAddMember }: FamilyViewProps) {
+export default function FamilyView({ members, onDeleteMember, onAddMember, centerPerson: propCenterPerson, onCenterChange }: FamilyViewProps) {
   const { user } = useAuth();
-  const [centerPerson, setCenterPerson] = useState<any>(null);
+  const [localCenterPerson, setLocalCenterPerson] = useState<any>(null);
 
   // Find or create the main user profile
   const getMainProfile = () => {
@@ -42,7 +44,7 @@ export default function FamilyView({ members, onDeleteMember, onAddMember }: Fam
   };
 
   const mainProfile = getMainProfile();
-  const currentCenter = centerPerson || mainProfile;
+  const currentCenter = propCenterPerson || localCenterPerson || mainProfile;
 
   if (!currentCenter) {
     return (
@@ -118,7 +120,7 @@ export default function FamilyView({ members, onDeleteMember, onAddMember }: Fam
     return (
       <div className="flex flex-col items-center group relative">
         <div 
-          onClick={() => !isCenter && setCenterPerson(person)}
+          onClick={() => !isCenter && onCenterChange && onCenterChange(person)}
           className={`
             ${size === 'lg' ? 'w-24 h-24' : size === 'md' ? 'w-20 h-20' : 'w-16 h-16'}
             ${isCenter ? 'border-4 border-heritage-brown bg-heritage-light' : 'border-2 border-blue-300 bg-blue-50'}

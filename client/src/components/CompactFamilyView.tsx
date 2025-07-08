@@ -7,11 +7,13 @@ interface CompactFamilyViewProps {
   members: any[];
   onDeleteMember: (id: number) => void;
   onAddMember: (relationship: string, relatedTo?: number) => void;
+  centerPerson?: any;
+  onCenterChange?: (person: any) => void;
 }
 
-export default function CompactFamilyView({ members, onDeleteMember, onAddMember }: CompactFamilyViewProps) {
+export default function CompactFamilyView({ members, onDeleteMember, onAddMember, centerPerson: propCenterPerson, onCenterChange }: CompactFamilyViewProps) {
   const { user } = useAuth();
-  const [centerPerson, setCenterPerson] = useState<any>(null);
+  const [localCenterPerson, setLocalCenterPerson] = useState<any>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     ancestors: false,
     descendants: false,
@@ -47,7 +49,7 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
   };
 
   const mainProfile = getMainProfile();
-  const currentCenter = centerPerson || mainProfile;
+  const currentCenter = propCenterPerson || localCenterPerson || mainProfile;
 
   if (!currentCenter) {
     return (
@@ -63,17 +65,31 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
     );
   }
 
-  // Get immediate family relationships
+  // Get immediate family relationships with improved logic
   const getImmediateFamily = (person: any) => {
+    const father = members.find(m => m.id === person.fatherId);
+    const mother = members.find(m => m.id === person.motherId);
+    const spouse = members.find(m => m.id === person.spouseId);
+    
+    // Find all children (where this person is father or mother)
+    const allChildren = members.filter(m => m.fatherId === person.id || m.motherId === person.id);
+    
+    // Find all siblings (same father or mother, excluding self)
+    const allSiblings = members.filter(m => {
+      if (m.id === person.id) return false;
+      return (m.fatherId === person.fatherId && person.fatherId) ||
+             (m.motherId === person.motherId && person.motherId);
+    });
+    
     return {
-      father: members.find(m => m.id === person.fatherId),
-      mother: members.find(m => m.id === person.motherId),
-      spouse: members.find(m => m.id === person.spouseId),
-      children: members.filter(m => m.fatherId === person.id || m.motherId === person.id).slice(0, 3),
-      siblings: members.filter(m => 
-        (m.fatherId === person.fatherId && person.fatherId) ||
-        (m.motherId === person.motherId && person.motherId)
-      ).filter(m => m.id !== person.id).slice(0, 3),
+      father,
+      mother,
+      spouse,
+      children: allChildren,
+      siblings: allSiblings,
+      // For display purposes
+      displayChildren: showAllChildren ? allChildren : allChildren.slice(0, 3),
+      displaySiblings: showAllSiblings ? allSiblings : allSiblings.slice(0, 3),
     };
   };
 
@@ -105,7 +121,7 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
     return (
       <div className="flex flex-col items-center group relative p-2">
         <div 
-          onClick={() => !isCenter && setCenterPerson(person)}
+          onClick={() => !isCenter && onCenterChange && onCenterChange(person)}
           className={`
             ${size === 'lg' ? 'w-16 h-16' : size === 'md' ? 'w-12 h-12' : 'w-10 h-10'}
             ${isCenter ? 'border-3 border-heritage-brown bg-heritage-light' : 'border-2 border-blue-300 bg-blue-50'}
@@ -212,12 +228,12 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
             </div>
           </div>
 
-          {/* Children - First 3 */}
+          {/* Children */}
           {(family.children.length > 0 || true) && (
             <div className="text-center">
               <div className="text-xs text-gray-500 mb-2">الأطفال</div>
               <div className="flex justify-center gap-4">
-                {family.children.map((child) => (
+                {family.displayChildren.map((child) => (
                   <div key={child.id}>
                     {renderPersonCard(child, 'ابن/ابنة', 'sm')}
                   </div>
@@ -239,10 +255,25 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
                   )
                 )}
               </div>
-              {family.children.length > 3 && (
-                <div className="text-xs text-gray-500 mt-2">
-                  +{family.children.length - 3} أطفال آخرين
-                </div>
+              {family.children.length > 3 && !showAllChildren && (
+                <Button
+                  onClick={() => setShowAllChildren(true)}
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 text-xs"
+                >
+                  عرض جميع الأطفال ({family.children.length})
+                </Button>
+              )}
+              {family.children.length > 3 && showAllChildren && (
+                <Button
+                  onClick={() => setShowAllChildren(false)}
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 text-xs"
+                >
+                  عرض أقل
+                </Button>
               )}
             </div>
           )}
@@ -255,22 +286,36 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
         {family.siblings.length > 0 && (
           <Card>
             <CardContent className="p-3">
-              <button
-                onClick={() => toggleSection('siblings')}
-                className="w-full flex items-center justify-between text-sm font-medium text-heritage-brown hover:bg-heritage-light p-2 rounded"
-              >
-                <span>الأشقاء ({family.siblings.length})</span>
-                <i className={`fas fa-chevron-${expandedSections.siblings ? 'up' : 'down'}`}></i>
-              </button>
-              {expandedSections.siblings && (
-                <div className="flex flex-wrap gap-2 mt-3 justify-center">
-                  {family.siblings.map((sibling) => (
+              <div className="text-center">
+                <div className="text-sm font-medium text-heritage-brown mb-2">الأشقاء</div>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {family.displaySiblings.map((sibling) => (
                     <div key={sibling.id} className="transform scale-90">
                       {renderPersonCard(sibling, 'شقيق', 'sm')}
                     </div>
                   ))}
                 </div>
-              )}
+                {family.siblings.length > 3 && !showAllSiblings && (
+                  <Button
+                    onClick={() => setShowAllSiblings(true)}
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 text-xs"
+                  >
+                    عرض جميع الأشقاء ({family.siblings.length})
+                  </Button>
+                )}
+                {family.siblings.length > 3 && showAllSiblings && (
+                  <Button
+                    onClick={() => setShowAllSiblings(false)}
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 text-xs"
+                  >
+                    عرض أقل
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
