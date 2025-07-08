@@ -116,7 +116,10 @@ This is a comprehensive Arabic family genealogy platform designed to help Arabic
 
 ## Changelog
 
-- July 08, 2025. Initial setup
+- July 08, 2025: Initial setup
+- July 08, 2025: Enhanced GEDCOM import with relationship linking and bulk clear functionality
+- July 08, 2025: Fixed foreign key constraint issues during family member deletion
+- July 08, 2025: Successfully imported 330-member family tree with Arabic names and relationships
 
 ## User Preferences
 
