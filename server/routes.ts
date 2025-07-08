@@ -487,8 +487,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Parsed GEDCOM: ${parsedData.individuals.length} individuals, ${parsedData.families.length} families`);
       
-      // Get existing family members to check for duplicates
+      // Check if user wants to clear existing data
+      const clearExisting = req.body.clearExisting === 'true';
+      
+      // Get existing family members
       const existingMembers = await storage.getFamilyMembers(userId);
+      
+      // Clear existing data if requested
+      let clearedCount = 0;
+      if (clearExisting && existingMembers.length > 0) {
+        console.log(`Clearing ${existingMembers.length} existing family members for fresh import`);
+        for (const member of existingMembers) {
+          await storage.deleteFamilyMember(member.id);
+          clearedCount++;
+        }
+      }
       
       // Convert and import family members
       let importedCount = 0;
@@ -626,6 +639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         message: "GEDCOM file imported successfully", 
         document,
+        clearedCount,
         importedCount,
         updatedCount,
         skippedCount,

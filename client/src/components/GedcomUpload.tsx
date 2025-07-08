@@ -15,6 +15,7 @@ export default function GedcomUpload({ onClose }: GedcomUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
+  const [clearExisting, setClearExisting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -34,6 +35,7 @@ export default function GedcomUpload({ onClose }: GedcomUploadProps) {
       onClose();
       
       const stats = [];
+      if (data.clearedCount > 0) stats.push(`${data.clearedCount} محذوف`);
       if (data.importedCount > 0) stats.push(`${data.importedCount} جديد`);
       if (data.updatedCount > 0) stats.push(`${data.updatedCount} محدث`);
       if (data.skippedCount > 0) stats.push(`${data.skippedCount} موجود مسبقاً`);
@@ -88,6 +90,7 @@ export default function GedcomUpload({ onClose }: GedcomUploadProps) {
 
     const formData = new FormData();
     formData.append("gedcom", file);
+    formData.append("clearExisting", clearExisting.toString());
     uploadMutation.mutate(formData);
   };
 
@@ -119,6 +122,20 @@ export default function GedcomUpload({ onClose }: GedcomUploadProps) {
             <p className="text-sm text-gray-500 mt-1">
               الصيغ المدعومة: .ged, .gedcom (من MyHeritage, FamilySearch, وغيرها)
             </p>
+          </div>
+
+          {/* Clear Existing Data Option */}
+          <div className="flex items-center space-x-2 space-x-reverse p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <input
+              type="checkbox"
+              id="clear-existing"
+              checked={clearExisting}
+              onChange={(e) => setClearExisting(e.target.checked)}
+              className="h-4 w-4 text-heritage-brown bg-gray-100 border-gray-300 rounded focus:ring-heritage-green focus:ring-2"
+            />
+            <label htmlFor="clear-existing" className="text-sm text-amber-800 cursor-pointer">
+              <span className="font-medium">حذف البيانات الموجودة:</span> امسح جميع أفراد العائلة الحاليين قبل الاستيراد (بداية جديدة)
+            </label>
           </div>
 
           {/* Processing Indicator */}
