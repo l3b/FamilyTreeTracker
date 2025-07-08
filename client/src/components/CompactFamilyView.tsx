@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,11 +14,26 @@ interface CompactFamilyViewProps {
 export default function CompactFamilyView({ members, onDeleteMember, onAddMember, centerPerson: propCenterPerson, onCenterChange }: CompactFamilyViewProps) {
   const { user } = useAuth();
   const [localCenterPerson, setLocalCenterPerson] = useState<any>(null);
+  const [showAllChildren, setShowAllChildren] = useState(false);
+  const [showAllSiblings, setShowAllSiblings] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     ancestors: false,
     descendants: false,
     siblings: false
   });
+
+  // Find the user's record in the family tree (fallback if no centerPerson prop)
+  useEffect(() => {
+    if (!propCenterPerson && user && members.length > 0) {
+      const userRecord = members.find(member => member.userId === user.id);
+      if (userRecord) {
+        setLocalCenterPerson(userRecord);
+      } else {
+        // If user not found, center on first member
+        setLocalCenterPerson(members[0]);
+      }
+    }
+  }, [user, members, propCenterPerson]);
 
   // Find or create the main user profile
   const getMainProfile = () => {
