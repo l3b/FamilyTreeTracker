@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 interface CompactFamilyViewProps {
   members: any[];
@@ -16,6 +17,7 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
   const [localCenterPerson, setLocalCenterPerson] = useState<any>(null);
   const [showAllChildren, setShowAllChildren] = useState(false);
   const [showAllSiblings, setShowAllSiblings] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     ancestors: false,
     descendants: false,
@@ -65,6 +67,13 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
 
   const mainProfile = getMainProfile();
   const currentCenter = propCenterPerson || localCenterPerson || mainProfile;
+
+  // Filter members based on search term
+  const filteredMembers = members.filter(member => 
+    member.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    member.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    `${member.firstName} ${member.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!currentCenter) {
     return (
@@ -211,19 +220,32 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
         </p>
       </div>
 
-      {/* How to Select Yourself */}
+      {/* Search and Person Selector */}
       <div className="bg-gradient-to-r from-heritage-light to-heritage-beige border border-heritage-brown rounded-lg p-3 mb-4">
         <div className="text-center">
           <div className="text-sm font-semibold text-heritage-brown mb-2">
             اختر نفسك من الشجرة
           </div>
+          
+          {/* Search Input */}
+          <div className="mb-3">
+            <Input
+              type="text"
+              placeholder="ابحث عن شخص في العائلة..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full max-w-md mx-auto text-sm"
+              dir="rtl"
+            />
+          </div>
+          
           <div className="text-xs text-gray-600 mb-2">
             انقر على أي شخص في الشجرة لجعله في المركز • أو استخدم الزر الأزرق 👤 بجانب كل شخص
           </div>
           
           {/* Quick Person Selector */}
           <div className="flex flex-wrap gap-2 justify-center mt-2">
-            {members.slice(0, 8).map((member) => (
+            {(searchTerm ? filteredMembers : members).slice(0, 8).map((member) => (
               <button
                 key={member.id}
                 onClick={() => onCenterChange && onCenterChange(member)}
@@ -236,12 +258,19 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
                 {member.firstName} {member.lastName}
               </button>
             ))}
-            {members.length > 8 && (
+            {(searchTerm ? filteredMembers : members).length > 8 && (
               <div className="text-xs text-gray-500 px-2 py-1">
-                +{members.length - 8} أخرى
+                +{(searchTerm ? filteredMembers : members).length - 8} أخرى
               </div>
             )}
           </div>
+          
+          {/* Search Results Count */}
+          {searchTerm && (
+            <div className="text-xs text-gray-500 mt-2">
+              {filteredMembers.length} نتيجة من أصل {members.length} شخص
+            </div>
+          )}
         </div>
       </div>
 
