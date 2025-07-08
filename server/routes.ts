@@ -36,6 +36,53 @@ interface GedcomIndividual {
   children?: string[];
 }
 
+function processRelationships(individuals: GedcomIndividual[], families: GedcomFamily[]) {
+  // Create lookup maps
+  const individualMap = new Map(individuals.map(ind => [ind.id, ind]));
+  const familyMap = new Map(families.map(fam => [fam.id, fam]));
+
+  console.log(`Processing relationships for ${individuals.length} individuals and ${families.length} families`);
+
+  // Process family relationships
+  for (const individual of individuals) {
+    // Find parents through parent family
+    if ((individual as any).parentFamily) {
+      const parentFamily = familyMap.get((individual as any).parentFamily);
+      if (parentFamily) {
+        if (parentFamily.husband) {
+          individual.father = parentFamily.husband;
+          console.log(`Set father for ${individual.name}: ${parentFamily.husband}`);
+        }
+        if (parentFamily.wife) {
+          individual.mother = parentFamily.wife;
+          console.log(`Set mother for ${individual.name}: ${parentFamily.wife}`);
+        }
+      }
+    }
+
+    // Find spouses through spouse families
+    if ((individual as any).spouseFamilies) {
+      for (const familyId of (individual as any).spouseFamilies) {
+        const family = familyMap.get(familyId);
+        if (family) {
+          if (family.husband && family.husband !== individual.id) {
+            if (!individual.spouse) individual.spouse = [];
+            individual.spouse.push(family.husband);
+          }
+          if (family.wife && family.wife !== individual.id) {
+            if (!individual.spouse) individual.spouse = [];
+            individual.spouse.push(family.wife);
+          }
+          // Add children
+          if (family.children) {
+            individual.children = [...(individual.children || []), ...family.children];
+          }
+        }
+      }
+    }
+  }
+}
+
 interface GedcomFamily {
   id: string;
   husband?: string;
@@ -208,6 +255,9 @@ function parseGedcom(gedcomText: string): ParsedGedcom {
         break;
     }
   }
+
+  // Process relationships after parsing all records
+  processRelationships(individuals, families);
 
   console.log(`Parsed GEDCOM: ${individuals.length} individuals, ${families.length} families`);
   if (individuals.length > 0) {
