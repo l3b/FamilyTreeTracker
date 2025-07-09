@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -218,9 +219,11 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
         </div>
         
         <div className="text-center mt-1">
-          <div className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'} truncate max-w-[60px]`}>
-            {person.firstName}
-          </div>
+          <Link href={`/member/${person.id}`}>
+            <a className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'} truncate max-w-[60px] hover:underline cursor-pointer`}>
+              {person.firstName}
+            </a>
+          </Link>
           {person.birthDate && (
             <div className="text-xs text-gray-400">
               {new Date(person.birthDate).getFullYear()}

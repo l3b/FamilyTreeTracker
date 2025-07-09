@@ -393,6 +393,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/family-members/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const memberId = parseInt(req.params.id);
+      const member = await storage.getFamilyMember(memberId);
+      
+      if (!member) {
+        return res.status(404).json({ message: "Member not found" });
+      }
+      
+      // Verify the member belongs to the user's family
+      const userId = req.user.claims.sub;
+      if (member.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      res.json(member);
+    } catch (error) {
+      console.error("Error fetching family member:", error);
+      res.status(500).json({ message: "Failed to fetch family member" });
+    }
+  });
+
   app.post("/api/family-members", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -470,7 +492,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/family-documents", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const documents = await storage.getFamilyDocuments(userId);
+      let documents = await storage.getFamilyDocuments(userId);
+      
+      // Filter by familyMemberId if provided
+      const familyMemberId = req.query.familyMemberId;
+      if (familyMemberId) {
+        documents = documents.filter((doc: any) => doc.familyMemberId === parseInt(familyMemberId));
+      }
+      
       res.json(documents);
     } catch (error) {
       console.error("Error fetching family documents:", error);
@@ -507,7 +536,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/family-photos", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const photos = await storage.getFamilyPhotos(userId);
+      let photos = await storage.getFamilyPhotos(userId);
+      
+      // Filter by familyMemberId if provided
+      const familyMemberId = req.query.familyMemberId;
+      if (familyMemberId) {
+        photos = photos.filter((photo: any) => photo.familyMemberId === parseInt(familyMemberId));
+      }
+      
       res.json(photos);
     } catch (error) {
       console.error("Error fetching family photos:", error);

@@ -1,3 +1,5 @@
+import { Link } from "wouter";
+
 interface FamilyTreeViewProps {
   members: any[];
   onDeleteMember: (id: number) => void;
@@ -95,9 +97,11 @@ export default function FamilyTreeView({ members, onDeleteMember }: FamilyTreeVi
         </div>
         
         <div className="mt-2 text-center min-w-[80px]">
-          <div className="text-xs font-medium text-heritage-dark truncate">
-            {member.firstName} {member.lastName}
-          </div>
+          <Link href={`/member/${member.id}`}>
+            <a className="text-xs font-medium text-heritage-dark truncate hover:underline cursor-pointer">
+              {member.firstName} {member.lastName}
+            </a>
+          </Link>
           {member.arabicName && member.arabicName !== `${member.firstName} ${member.lastName}` && (
             <div className="text-xs text-gray-500 truncate">{member.arabicName}</div>
           )}
