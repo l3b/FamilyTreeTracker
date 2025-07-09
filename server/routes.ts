@@ -489,6 +489,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/family-members/:id", isAuthenticated, upload.single("profileImage"), async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.user.claims.sub;
+      
+      // Get the member to check permissions
+      const member = await storage.getFamilyMember(id);
+      if (!member) {
+        return res.status(404).json({ message: "Member not found" });
+      }
+      
+      // Get user to check admin status
+      const user = await storage.getUser(userId);
+      const isAdmin = user?.isAdmin || user?.isSuperAdmin;
+      
+      // Check permissions: admin can update anyone, regular users can update their own family
+      if (!isAdmin && member.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden: You can only update your own family members" });
+      }
+      
+      // Parse the form data
+      const formData = { ...req.body };
+      
+      // Handle profile image upload
+      if (req.file) {
+        formData.profileImageUrl = `/uploads/${req.file.filename}`;
+      }
+      
+      // Parse social media JSON if provided
+      if (formData.socialMedia && typeof formData.socialMedia === 'string') {
+        try {
+          formData.socialMedia = JSON.parse(formData.socialMedia);
+        } catch (error) {
+          console.error("Error parsing social media JSON:", error);
+          formData.socialMedia = [];
+        }
+      }
+      
+      // Parse dates
+      ['birthDate', 'deathDate', 'marriageDate'].forEach(field => {
+        if (formData[field]) {
+          formData[field] = new Date(formData[field]);
+        }
+      });
+      
+      const memberData = insertFamilyMemberSchema.partial().parse(formData);
+      const updatedMember = await storage.updateFamilyMember(id, memberData);
+      
+      // Log the activity
+      await storage.logUserActivity({
+        userId,
+        action: "update_member",
+        entityType: "family_member",
+        entityId: id,
+        details: { updatedFields: Object.keys(memberData) },
+        ipAddress: req.ip
+      });
+      
+      res.json(updatedMember);
+    } catch (error) {
+      console.error("Error updating family member:", error);
+      res.status(500).json({ message: "Failed to update family member" });
+    }
+  });
+
   app.delete("/api/family-members/:id", isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -619,6 +684,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error uploading photo:", error);
       res.status(500).json({ message: "Failed to upload photo" });
+    }
+  });
+
+  // Email invitation route
+  app.post("/api/invitations/send-email", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { email, memberName } = req.body;
+      
+      if (!email || !memberName) {
+        return res.status(400).json({ message: "Email and member name are required" });
+      }
+      
+      // Create invitation token
+      const invitationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      
+      // Store invitation in database
+      await storage.createFamilyInvitation({
+        userId,
+        email,
+        token: invitationToken,
+        status: "pending",
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      });
+      
+      // Here you would typically send an email
+      // For now, we'll just return the invitation link
+      const invitationLink = `${req.protocol}://${req.get('host')}/join?token=${invitationToken}`;
+      
+      console.log(`Email invitation for ${memberName} (${email}): ${invitationLink}`);
+      
+      res.json({ 
+        success: true, 
+        message: "Invitation sent successfully",
+        invitationLink // In development, return the link
+      });
+    } catch (error) {
+      console.error("Error sending email invitation:", error);
+      res.status(500).json({ message: "Failed to send invitation" });
     }
   });
 
