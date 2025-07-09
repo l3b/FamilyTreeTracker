@@ -80,7 +80,7 @@ export default function FamilyTree() {
 
   const cleanupMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest('/api/admin/cleanup', 'POST');
+      await apiRequest('/api/admin/cleanup', 'POST', {});
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/family-members"] });
