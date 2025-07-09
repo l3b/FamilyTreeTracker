@@ -6,7 +6,7 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { CalendarIcon, Camera, Mail, Phone, Plus, X } from "lucide-react";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -201,6 +201,9 @@ export default function EditMemberForm({ member, isOpen, onClose }: EditMemberFo
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>تعديل معلومات العضو</DialogTitle>
+          <DialogDescription>
+            قم بتحديث المعلومات الشخصية وبيانات الاتصال للعضو
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

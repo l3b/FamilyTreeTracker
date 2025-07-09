@@ -534,6 +534,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
+      // Remove empty string values
+      Object.keys(formData).forEach(key => {
+        if (formData[key] === '') {
+          delete formData[key];
+        }
+      });
+      
+      console.log("Form data to update:", formData);
+      
       const memberData = insertFamilyMemberSchema.partial().parse(formData);
       const updatedMember = await storage.updateFamilyMember(id, memberData);
       
@@ -550,6 +559,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedMember);
     } catch (error) {
       console.error("Error updating family member:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
       res.status(500).json({ message: "Failed to update family member" });
     }
   });
