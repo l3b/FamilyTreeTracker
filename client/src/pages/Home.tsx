@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import NewsCard from "@/components/NewsCard";
 import DocumentCard from "@/components/DocumentCard";
 import PhotoCard from "@/components/PhotoCard";
+import ProfileLinking from "@/components/ProfileLinking";
 import GedcomUpload from "@/components/GedcomUpload";
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const [showGedcomUpload, setShowGedcomUpload] = useState(false);
+  const { user } = useAuth();
 
   const { data: familyMembers = [], isLoading: membersLoading } = useQuery({
     queryKey: ["/api/family-members"],
@@ -44,6 +47,14 @@ export default function Home() {
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Profile Linking Section */}
+        {user && (
+          <ProfileLinking 
+            currentUser={user} 
+            familyMembers={familyMembers}
+          />
+        )}
+
         {/* Welcome Section */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between">

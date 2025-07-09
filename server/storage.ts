@@ -70,6 +70,11 @@ export interface IStorage {
   // Activity log operations
   getUserActivities(userId: string): Promise<any[]>;
   logUserActivity(activity: any): Promise<void>;
+
+  // User-profile linking operations
+  linkUserToFamilyMember(userId: string, familyMemberId: number): Promise<User>;
+  unlinkUserFromFamilyMember(userId: string): Promise<User>;
+  getLinkedFamilyMember(userId: string): Promise<FamilyMember | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -329,6 +334,54 @@ export class DatabaseStorage implements IStorage {
     await db
       .insert(userActivityLog)
       .values(activity);
+  }
+
+  // User-profile linking operations
+  async linkUserToFamilyMember(userId: string, familyMemberId: number): Promise<User> {
+    // First verify the family member exists and belongs to this user's family
+    const familyMember = await this.getFamilyMember(familyMemberId);
+    if (!familyMember) {
+      throw new Error("Family member not found");
+    }
+
+    // Check if family member already belongs to user's family
+    if (familyMember.userId !== userId) {
+      throw new Error("Family member does not belong to this user's family");
+    }
+
+    // Update user to link to this family member
+    const [updatedUser] = await db
+      .update(users)
+      .set({ 
+        familyMemberId: familyMemberId,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updatedUser;
+  }
+
+  async unlinkUserFromFamilyMember(userId: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ 
+        familyMemberId: null,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updatedUser;
+  }
+
+  async getLinkedFamilyMember(userId: string): Promise<FamilyMember | undefined> {
+    const user = await this.getUser(userId);
+    if (!user || !user.familyMemberId) {
+      return undefined;
+    }
+
+    return await this.getFamilyMember(user.familyMemberId);
   }
 }
 

@@ -31,7 +31,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   username: varchar("username").unique(),
-  familyMemberId: integer("family_member_id"), // Which family member this user represents
+  familyMemberId: integer("family_member_id").references(() => familyMembers.id), // Which family member this user represents
   isAdmin: boolean("is_admin").default(false),
   isSuperAdmin: boolean("is_super_admin").default(false), // Creator of the family
   createdAt: timestamp("created_at").defaultNow(),
