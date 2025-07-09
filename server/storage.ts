@@ -5,6 +5,8 @@ import {
   familyDocuments,
   familyPhotos,
   familyInvitations,
+  familySettings,
+  userActivityLog,
   type User,
   type UpsertUser,
   type FamilyMember,
@@ -25,6 +27,7 @@ export interface IStorage {
   // User operations (mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
 
   // Family member operations
   getFamilyMembers(userId: string): Promise<FamilyMember[]>;
@@ -59,6 +62,14 @@ export interface IStorage {
   createFamilyInvitation(invitation: InsertFamilyInvitation): Promise<FamilyInvitation>;
   getFamilyInvitationByToken(token: string): Promise<FamilyInvitation | undefined>;
   updateFamilyInvitation(id: number, invitation: Partial<InsertFamilyInvitation>): Promise<FamilyInvitation>;
+
+  // Family settings operations
+  getFamilySettings(userId: string): Promise<any>;
+  updateFamilySettings(userId: string, settings: any): Promise<any>;
+
+  // Activity log operations
+  getUserActivities(userId: string): Promise<any[]>;
+  logUserActivity(activity: any): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -267,6 +278,57 @@ export class DatabaseStorage implements IStorage {
       .where(eq(familyInvitations.id, id))
       .returning();
     return updatedInvitation;
+  }
+
+  // Admin operations
+  async getAllUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .orderBy(desc(users.createdAt));
+  }
+
+  // Family settings operations
+  async getFamilySettings(userId: string): Promise<any> {
+    const [settings] = await db
+      .select()
+      .from(familySettings)
+      .where(eq(familySettings.userId, userId));
+    return settings || {};
+  }
+
+  async updateFamilySettings(userId: string, settings: any): Promise<any> {
+    const existing = await this.getFamilySettings(userId);
+    
+    if (existing && Object.keys(existing).length > 0) {
+      const [updated] = await db
+        .update(familySettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(familySettings.userId, userId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(familySettings)
+        .values({ ...settings, userId })
+        .returning();
+      return created;
+    }
+  }
+
+  // Activity log operations
+  async getUserActivities(userId: string): Promise<any[]> {
+    return await db
+      .select()
+      .from(userActivityLog)
+      .orderBy(desc(userActivityLog.createdAt))
+      .limit(100);
+  }
+
+  async logUserActivity(activity: any): Promise<void> {
+    await db
+      .insert(userActivityLog)
+      .values(activity);
   }
 }
 
