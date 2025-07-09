@@ -10,6 +10,7 @@ import FamilyTree from "@/pages/FamilyTree";
 import News from "@/pages/News";
 import Documents from "@/pages/Documents";
 import Photos from "@/pages/Photos";
+import AdminPanel from "@/pages/AdminPanel";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -37,6 +38,7 @@ function Router() {
           <Route path="/news" component={News} />
           <Route path="/documents" component={Documents} />
           <Route path="/photos" component={Photos} />
+          <Route path="/admin" component={AdminPanel} />
         </>
       )}
       <Route component={NotFound} />

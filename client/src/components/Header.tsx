@@ -14,6 +14,7 @@ export default function Header() {
     { name: "الأخبار", href: "/news", icon: "fas fa-newspaper" },
     { name: "الوثائق", href: "/documents", icon: "fas fa-file-alt" },
     { name: "الصور", href: "/photos", icon: "fas fa-images" },
+    ...(user?.isAdmin || user?.isSuperAdmin ? [{ name: "لوحة الإدارة", href: "/admin", icon: "fas fa-cog" }] : []),
   ];
 
   return (

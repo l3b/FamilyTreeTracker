@@ -30,8 +30,23 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  arabicName: varchar("arabic_name"),
-  familyName: varchar("family_name"),
+  username: varchar("username").unique(),
+  familyMemberId: integer("family_member_id"), // Which family member this user represents
+  isAdmin: boolean("is_admin").default(false),
+  isSuperAdmin: boolean("is_super_admin").default(false), // Creator of the family
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Family settings table
+export const familySettings = pgTable("family_settings", {
+  id: serial("id").primaryKey(),
+  familyName: varchar("family_name").notNull(),
+  familyDescription: text("family_description"),
+  isPublic: boolean("is_public").default(false),
+  allowMemberInvites: boolean("allow_member_invites").default(true),
+  requireApproval: boolean("require_approval").default(true),
+  createdByUserId: varchar("created_by_user_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -98,15 +113,32 @@ export const familyPhotos = pgTable("family_photos", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Family invitations table
+// Family invitations table (enhanced with admin features)
 export const familyInvitations = pgTable("family_invitations", {
   id: serial("id").primaryKey(),
-  fromUserId: varchar("from_user_id").references(() => users.id),
+  invitedByUserId: varchar("invited_by_user_id").references(() => users.id),
   email: varchar("email").notNull(),
-  role: varchar("role").default("member"),
-  status: varchar("status").default("pending"), // pending, accepted, declined
+  username: varchar("username").notNull(),
   token: varchar("token").notNull().unique(),
+  familyMemberId: integer("family_member_id").references(() => familyMembers.id),
+  isAdminInvite: boolean("is_admin_invite").default(false),
+  message: text("message"), // Custom invitation message
+  status: varchar("status").default("pending"), // pending, accepted, expired, revoked
   expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  acceptedAt: timestamp("accepted_at"),
+});
+
+// User activity log for admin oversight
+export const userActivityLog = pgTable("user_activity_log", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
+  action: varchar("action").notNull(), // login, create_member, edit_member, etc.
+  entityType: varchar("entity_type"), // family_member, news, document, photo
+  entityId: integer("entity_id"),
+  details: jsonb("details"),
+  ipAddress: varchar("ip_address"),
+  userAgent: varchar("user_agent"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -155,6 +187,18 @@ export const insertFamilyPhotoSchema = createInsertSchema(familyPhotos).omit({
 });
 
 export const insertFamilyInvitationSchema = createInsertSchema(familyInvitations).omit({
+  id: true,
+  createdAt: true,
+  acceptedAt: true,
+});
+
+export const insertFamilySettingsSchema = createInsertSchema(familySettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserActivityLogSchema = createInsertSchema(userActivityLog).omit({
   id: true,
   createdAt: true,
 });
