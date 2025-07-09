@@ -219,10 +219,8 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
         </div>
         
         <div className="text-center mt-1">
-          <Link href={`/member/${person.id}`}>
-            <a className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'} truncate max-w-[60px] hover:underline cursor-pointer`}>
-              {person.firstName}
-            </a>
+          <Link href={`/member/${person.id}`} className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'} truncate max-w-[60px] hover:underline cursor-pointer block`}>
+            {person.firstName}
           </Link>
           {person.birthDate && (
             <div className="text-xs text-gray-400">
