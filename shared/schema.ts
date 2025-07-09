@@ -65,9 +65,16 @@ export const familyMembers = pgTable("family_members", {
   motherId: integer("mother_id").references(() => familyMembers.id),
   spouseId: integer("spouse_id").references(() => familyMembers.id),
   birthPlace: text("birth_place"),
+  deathPlace: text("death_place"),
   occupation: text("occupation"),
   notes: text("notes"),
   profileImageUrl: varchar("profile_image_url"),
+  phone: varchar("phone"),
+  email: varchar("email"),
+  education: text("education"),
+  marriageDate: timestamp("marriage_date"),
+  marriagePlace: text("marriage_place"),
+  gedcomId: varchar("gedcom_id"), // Original GEDCOM ID for reference
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

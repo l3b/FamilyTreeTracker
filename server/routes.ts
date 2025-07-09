@@ -206,6 +206,18 @@ function parseGedcom(gedcomText: string): ParsedGedcom {
         case 'OCCU':
           currentRecord.occupation = value;
           break;
+        case 'EDUC':
+          currentRecord.education = value;
+          break;
+        case 'PHONE':
+          currentRecord.phone = value;
+          break;
+        case 'EMAIL':
+          currentRecord.email = value;
+          break;
+        case 'MARR':
+          currentSubRecord = 'MARR';
+          break;
         case 'FAMC':
           // Family as Child - parent family
           (currentRecord as any).parentFamily = value.replace(/[@]/g, '');
@@ -249,6 +261,13 @@ function parseGedcom(gedcomText: string): ParsedGedcom {
             currentRecord.death = parseDate(value);
           } else if (tag === 'PLAC') {
             currentRecord.deathPlace = value;
+          }
+          break;
+        case 'MARR':
+          if (tag === 'DATE') {
+            currentRecord.marriageDate = parseDate(value);
+          } else if (tag === 'PLAC') {
+            currentRecord.marriagePlace = value;
           }
           break;
       }
@@ -433,9 +452,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/family-members/:id", isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = req.user.claims.sub;
+      
+      // Get the member to check permissions
+      const member = await storage.getFamilyMember(id);
+      if (!member) {
+        return res.status(404).json({ message: "Member not found" });
+      }
+      
+      // Get user to check admin status
+      const user = await storage.getUser(userId);
+      const isAdmin = user?.isAdmin || user?.isSuperAdmin;
+      
+      // Check permissions: admin can update anyone, regular users can update their own family
+      if (!isAdmin && member.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden: You can only update your own family members" });
+      }
+      
       const memberData = insertFamilyMemberSchema.partial().parse(req.body);
-      const member = await storage.updateFamilyMember(id, memberData);
-      res.json(member);
+      const updatedMember = await storage.updateFamilyMember(id, memberData);
+      
+      // Log the activity
+      await storage.logUserActivity({
+        userId,
+        action: "update_member",
+        entityType: "family_member",
+        entityId: id,
+        details: { updatedFields: Object.keys(memberData) },
+        ipAddress: req.ip
+      });
+      
+      res.json(updatedMember);
     } catch (error) {
       console.error("Error updating family member:", error);
       res.status(500).json({ message: "Failed to update family member" });
@@ -740,7 +787,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             deathDate: individual.death ? new Date(individual.death) : null,
             gender: individual.gender || null,
             birthPlace: individual.birthPlace || null,
+            deathPlace: individual.deathPlace || null,
             occupation: individual.occupation || null,
+            education: individual.education || null,
+            phone: individual.phone || null,
+            email: individual.email || null,
+            marriageDate: individual.marriageDate ? new Date(individual.marriageDate) : null,
+            marriagePlace: individual.marriagePlace || null,
+            gedcomId: individual.id,
             notes: `استُورد من ملف GEDCOM - معرف: ${individual.id}`,
           };
 
