@@ -125,6 +125,10 @@ This is a comprehensive Arabic family genealogy platform designed to help Arabic
 - July 08, 2025: Successfully imported 330-member family tree with Arabic names and relationships
 - July 09, 2025: Fixed GEDCOM preview parsing issue - client-side parser now correctly displays import counts
 - July 09, 2025: Implemented comprehensive admin system with user roles, family settings, invitation management, and activity logging
+- July 09, 2025: Enhanced GEDCOM import to capture additional fields (education, phone, email, marriage info, death place, GEDCOM ID)
+- July 09, 2025: Added profile editing functionality with role-based permissions (admin can edit any profile, users can edit their own family)
+- July 09, 2025: Improved member profile display with comprehensive information tabs and detailed information view
+- July 09, 2025: Fixed member profile loading and navigation issues
 
 ## User Preferences
 

@@ -1,6 +1,7 @@
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Calendar, MapPin, Briefcase, User, Users, FileText, Image as ImageIcon } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, Calendar, MapPin, Briefcase, User, Users, FileText, Image as ImageIcon, Edit, Phone, Mail, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,9 +11,11 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import DocumentCard from "@/components/DocumentCard";
 import PhotoCard from "@/components/PhotoCard";
+import EditMemberForm from "@/components/EditMemberForm";
 
 export default function MemberProfile() {
   const { id } = useParams();
+  const [isEditOpen, setIsEditOpen] = useState(false);
   
   const { data: member, isLoading: memberLoading } = useQuery({
     queryKey: [`/api/family-members/${id}`],
@@ -29,6 +32,10 @@ export default function MemberProfile() {
 
   const { data: photos = [] } = useQuery({
     queryKey: ["/api/family-photos"],
+  });
+
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/user"],
   });
 
   if (memberLoading) {
@@ -97,6 +104,13 @@ export default function MemberProfile() {
     ((member.fatherId && m.fatherId === member.fatherId) || 
      (member.motherId && m.motherId === member.motherId))
   );
+
+  // Check if user can edit this profile
+  const canEdit = currentUser && (
+    currentUser.isAdmin || 
+    currentUser.isSuperAdmin || 
+    member.userId === currentUser.id
+  );
   
   const father = member.fatherId ? allMembers.find((m: any) => m.id === member.fatherId) : null;
   const mother = member.motherId ? allMembers.find((m: any) => m.id === member.motherId) : null;
@@ -129,7 +143,20 @@ export default function MemberProfile() {
               </div>
               
               <div className="flex-1">
-                <h1 className="text-3xl font-bold mb-2">{member.arabicName || member.firstName}</h1>
+                <div className="flex justify-between items-start mb-2">
+                  <h1 className="text-3xl font-bold">{member.arabicName || member.firstName}</h1>
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Edit className="h-4 w-4" />
+                      تحرير
+                    </Button>
+                  )}
+                </div>
                 
                 {/* Father Chain */}
                 <div className="mb-4">
@@ -169,6 +196,24 @@ export default function MemberProfile() {
                     <div className="flex items-center gap-2">
                       <Briefcase className="h-4 w-4 text-muted-foreground" />
                       <span>{member.occupation}</span>
+                    </div>
+                  )}
+                  {member.education && (
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                      <span>{member.education}</span>
+                    </div>
+                  )}
+                  {member.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span dir="ltr">{member.phone}</span>
+                    </div>
+                  )}
+                  {member.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span dir="ltr">{member.email}</span>
                     </div>
                   )}
                   {member.deathDate && (
@@ -387,7 +432,7 @@ export default function MemberProfile() {
                   </div>
                   <div>
                     <dt className="font-medium text-muted-foreground">الجنس</dt>
-                    <dd>{member.gender === 'male' ? 'ذكر' : member.gender === 'female' ? 'أنثى' : '-'}</dd>
+                    <dd>{member.gender || '-'}</dd>
                   </div>
                   <div>
                     <dt className="font-medium text-muted-foreground">تاريخ الميلاد</dt>
@@ -401,6 +446,36 @@ export default function MemberProfile() {
                     <dt className="font-medium text-muted-foreground">المهنة</dt>
                     <dd>{member.occupation || '-'}</dd>
                   </div>
+                  {member.education && (
+                    <div>
+                      <dt className="font-medium text-muted-foreground">التعليم</dt>
+                      <dd>{member.education}</dd>
+                    </div>
+                  )}
+                  {member.phone && (
+                    <div>
+                      <dt className="font-medium text-muted-foreground">الهاتف</dt>
+                      <dd dir="ltr">{member.phone}</dd>
+                    </div>
+                  )}
+                  {member.email && (
+                    <div>
+                      <dt className="font-medium text-muted-foreground">البريد الإلكتروني</dt>
+                      <dd dir="ltr">{member.email}</dd>
+                    </div>
+                  )}
+                  {member.marriageDate && (
+                    <div>
+                      <dt className="font-medium text-muted-foreground">تاريخ الزواج</dt>
+                      <dd>{format(new Date(member.marriageDate), "d MMMM yyyy", { locale: ar })}</dd>
+                    </div>
+                  )}
+                  {member.marriagePlace && (
+                    <div>
+                      <dt className="font-medium text-muted-foreground">مكان الزواج</dt>
+                      <dd>{member.marriagePlace}</dd>
+                    </div>
+                  )}
                   {member.deathDate && (
                     <>
                       <div>
@@ -413,10 +488,16 @@ export default function MemberProfile() {
                       </div>
                     </>
                   )}
-                  {member.biography && (
+                  {member.notes && (
                     <div className="md:col-span-2">
-                      <dt className="font-medium text-muted-foreground mb-2">السيرة الذاتية</dt>
-                      <dd className="whitespace-pre-wrap">{member.biography}</dd>
+                      <dt className="font-medium text-muted-foreground mb-2">ملاحظات</dt>
+                      <dd className="whitespace-pre-wrap">{member.notes}</dd>
+                    </div>
+                  )}
+                  {member.gedcomId && (
+                    <div>
+                      <dt className="font-medium text-muted-foreground">معرف GEDCOM</dt>
+                      <dd className="font-mono text-sm">{member.gedcomId}</dd>
                     </div>
                   )}
                 </dl>
@@ -426,6 +507,15 @@ export default function MemberProfile() {
         </Tabs>
       </main>
       <Footer />
+
+      {/* Edit Member Form */}
+      {member && (
+        <EditMemberForm
+          member={member}
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+        />
+      )}
     </div>
   );
 }
