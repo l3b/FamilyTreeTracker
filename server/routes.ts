@@ -397,6 +397,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User-profile linking routes
+  app.post('/api/auth/link-profile/:familyMemberId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const familyMemberId = parseInt(req.params.familyMemberId);
+      
+      const updatedUser = await storage.linkUserToFamilyMember(userId, familyMemberId);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error linking user to family member:", error);
+      res.status(400).json({ message: error.message || "Failed to link profile" });
+    }
+  });
+
+  app.post('/api/auth/unlink-profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const updatedUser = await storage.unlinkUserFromFamilyMember(userId);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error unlinking user from family member:", error);
+      res.status(500).json({ message: "Failed to unlink profile" });
+    }
+  });
+
+  app.get('/api/auth/linked-profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const linkedMember = await storage.getLinkedFamilyMember(userId);
+      res.json(linkedMember || null);
+    } catch (error) {
+      console.error("Error getting linked family member:", error);
+      res.status(500).json({ message: "Failed to get linked profile" });
+    }
+  });
+
   // Serve uploaded files
   app.use("/uploads", express.static(uploadsDir));
 
