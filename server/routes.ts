@@ -13,7 +13,10 @@ import {
   insertFamilyDocumentSchema,
   insertFamilyPhotoSchema,
   insertFamilyInvitationSchema,
-  familyMembers
+  familyMembers,
+  familyNews,
+  familyDocuments,
+  familyPhotos
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
