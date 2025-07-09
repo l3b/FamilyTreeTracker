@@ -73,15 +73,15 @@ export function parseGedcom(gedcomText: string): ParsedGedcom {
       }
 
       // Start new record
-      if (tag === 'INDI') {
+      if (value === 'INDI') {
         currentType = 'INDI';
-        currentRecord = { id: parts[1].replace(/[@]/g, ''), spouse: [], children: [] };
-      } else if (tag === 'FAM') {
+        currentRecord = { id: tag.replace(/[@]/g, ''), spouse: [], children: [] };
+      } else if (value === 'FAM') {
         currentType = 'FAM';
-        currentRecord = { id: parts[1].replace(/[@]/g, ''), children: [] };
-      } else if (tag === 'SOUR') {
+        currentRecord = { id: tag.replace(/[@]/g, ''), children: [] };
+      } else if (value === 'SOUR') {
         currentType = 'SOUR';
-        currentRecord = { id: parts[1].replace(/[@]/g, '') };
+        currentRecord = { id: tag.replace(/[@]/g, '') };
       } else {
         currentType = null;
         currentRecord = null;
