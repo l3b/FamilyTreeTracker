@@ -191,6 +191,8 @@ export function parseGedcom(gedcomText: string): ParsedGedcom {
   // Post-process to establish relationships
   processRelationships(individuals, families);
 
+  console.log(`Client GEDCOM parsed: ${individuals.length} individuals, ${families.length} families, ${sources.length} sources`);
+
   return { individuals, families, sources };
 }
 
