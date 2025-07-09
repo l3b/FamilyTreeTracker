@@ -536,6 +536,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Complete database cleanup route
+  app.post("/api/admin/cleanup", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      console.log("Starting complete database cleanup for user:", userId);
+      
+      // Get counts before cleanup
+      const [membersBefore, photosBefore, documentsBefore, newsBefore] = await Promise.all([
+        storage.getFamilyMembers(userId),
+        storage.getFamilyPhotos(userId),
+        storage.getFamilyDocuments(userId),
+        storage.getFamilyNews(userId)
+      ]);
+      
+      // Step 1: Remove all relationships first
+      console.log("Step 1: Removing all relationships...");
+      await db.update(familyMembers)
+        .set({ 
+          fatherId: null, 
+          motherId: null, 
+          spouseId: null 
+        })
+        .where(eq(familyMembers.userId, userId));
+      
+      // Step 2: Delete all records
+      console.log("Step 2: Deleting all family data...");
+      await Promise.all([
+        db.delete(familyMembers).where(eq(familyMembers.userId, userId)),
+        db.delete(familyPhotos).where(eq(familyPhotos.userId, userId)),
+        db.delete(familyDocuments).where(eq(familyDocuments.userId, userId)),
+        db.delete(familyNews).where(eq(familyNews.userId, userId))
+      ]);
+      
+      console.log("Complete cleanup finished successfully");
+      
+      res.json({ 
+        message: "Database cleaned successfully",
+        removed: {
+          members: membersBefore.length,
+          photos: photosBefore.length,
+          documents: documentsBefore.length,
+          news: newsBefore.length
+        }
+      });
+    } catch (error) {
+      console.error("Error during cleanup:", error);
+      res.status(500).json({ message: "Failed to cleanup database", error: (error as Error).message });
+    }
+  });
+
   // GEDCOM import/export routes
   app.post("/api/gedcom/import", isAuthenticated, upload.single("gedcom"), async (req: any, res) => {
     try {
@@ -678,19 +729,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const updateData: any = {};
           
-          // Set father relationship
+          // Set father relationship - verify ID exists in database
           if (individual.father && gedcomToDbMap.has(individual.father)) {
-            updateData.fatherId = gedcomToDbMap.get(individual.father);
+            const fatherId = gedcomToDbMap.get(individual.father);
+            // Double-check the father exists in database
+            const fatherExists = await storage.getFamilyMember(fatherId!);
+            if (fatherExists) {
+              updateData.fatherId = fatherId;
+            }
           }
           
-          // Set mother relationship
+          // Set mother relationship - verify ID exists in database
           if (individual.mother && gedcomToDbMap.has(individual.mother)) {
-            updateData.motherId = gedcomToDbMap.get(individual.mother);
+            const motherId = gedcomToDbMap.get(individual.mother);
+            // Double-check the mother exists in database
+            const motherExists = await storage.getFamilyMember(motherId!);
+            if (motherExists) {
+              updateData.motherId = motherId;
+            }
           }
           
           // Set spouse relationship (take first spouse if multiple)
           if (individual.spouse && individual.spouse.length > 0 && gedcomToDbMap.has(individual.spouse[0])) {
-            updateData.spouseId = gedcomToDbMap.get(individual.spouse[0]);
+            const spouseId = gedcomToDbMap.get(individual.spouse[0]);
+            // Double-check the spouse exists in database
+            const spouseExists = await storage.getFamilyMember(spouseId!);
+            if (spouseExists) {
+              updateData.spouseId = spouseId;
+            }
           }
 
           // Update if there are relationships to set
