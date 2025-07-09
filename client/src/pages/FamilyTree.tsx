@@ -12,6 +12,7 @@ import FamilyView from "@/components/FamilyView";
 import CompactFamilyView from "@/components/CompactFamilyView";
 import GedcomUpload from "@/components/GedcomUpload";
 import { apiRequest } from "@/lib/queryClient";
+import { Plus, Upload, Trash2 } from "lucide-react";
 
 type TreeView = 'compact' | 'family' | 'pedigree' | 'fan';
 
@@ -75,6 +76,35 @@ export default function FamilyTree() {
   const handleCloseAddForm = () => {
     setShowAddForm(false);
     setRelationshipContext(null);
+  };
+
+  const cleanupMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest('/api/admin/cleanup', 'POST');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/family-members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/family-photos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/family-documents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/family-news"] });
+      toast({
+        title: "تم التنظيف بنجاح",
+        description: "تم حذف جميع البيانات بنجاح - قاعدة البيانات نظيفة الآن",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "خطأ في التنظيف",
+        description: "فشل في تنظيف قاعدة البيانات",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCompleteCleanup = () => {
+    if (confirm('هل أنت متأكد من حذف جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه.')) {
+      cleanupMutation.mutate();
+    }
   };
 
   if (isLoading) {
@@ -201,7 +231,7 @@ export default function FamilyTree() {
             onClick={() => handleAddMember('general')}
             className="bg-heritage-brown hover:bg-heritage-dark text-white"
           >
-            <i className="fas fa-user-plus mr-2"></i>
+            <Plus className="w-4 h-4 mr-2" />
             إضافة فرد جديد
           </Button>
           <Button 
@@ -209,8 +239,17 @@ export default function FamilyTree() {
             variant="outline"
             className="border-heritage-brown text-heritage-brown hover:bg-heritage-light"
           >
-            <i className="fas fa-upload mr-2"></i>
+            <Upload className="w-4 h-4 mr-2" />
             استيراد GEDCOM
+          </Button>
+          <Button 
+            onClick={handleCompleteCleanup}
+            variant="outline"
+            className="border-red-600 text-red-600 hover:bg-red-50"
+            disabled={cleanupMutation.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            {cleanupMutation.isPending ? 'جاري التنظيف...' : 'تنظيف شامل'}
           </Button>
         </div>
 
