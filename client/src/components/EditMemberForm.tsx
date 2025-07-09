@@ -181,10 +181,10 @@ export default function EditMemberForm({ member, isOpen, onClose }: EditMemberFo
     try {
       await apiRequest("/api/invitations/send-email", {
         method: "POST",
-        body: JSON.stringify({
+        body: {
           email: member.email,
           memberName: member.arabicName || member.firstName,
-        }),
+        },
       });
       toast({
         title: "تم الإرسال",
