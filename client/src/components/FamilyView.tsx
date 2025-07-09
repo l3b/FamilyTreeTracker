@@ -334,7 +334,7 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
               <div>
                 {renderPersonCard(
                   null,
-                  'ابن/ابنة',
+                  'إضافة ابن',
                   'sm',
                   () => onAddMember('child', currentCenter.id)
                 )}
@@ -344,7 +344,7 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
               <div>
                 {renderPersonCard(
                   null,
-                  'ابن/ابنة',
+                  'إضافة ابن',
                   'sm',
                   () => onAddMember('child', currentCenter.id)
                 )}

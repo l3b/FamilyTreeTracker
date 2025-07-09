@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,12 +21,14 @@ export default function AddMemberForm({ onClose, existingMembers, relationshipCo
     switch (relationship) {
       case 'father':
       case 'son':
+      case 'ابن':
       case 'grandfather':
       case 'paternalGrandfather':
       case 'maternalGrandfather':
         return 'male';
       case 'mother':
       case 'daughter':
+      case 'ابنة':
       case 'grandmother':
       case 'paternalGrandmother':
       case 'maternalGrandmother':
@@ -178,6 +180,9 @@ export default function AddMemberForm({ onClose, existingMembers, relationshipCo
             <i className="fas fa-user-plus ml-2"></i>
             إضافة فرد جديد للعائلة
           </DialogTitle>
+          <DialogDescription>
+            أدخل معلومات الفرد الجديد وحدد علاقته بأفراد العائلة الموجودين
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

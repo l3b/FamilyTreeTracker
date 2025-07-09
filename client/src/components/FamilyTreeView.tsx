@@ -39,7 +39,7 @@ export default function FamilyTreeView({ members, onDeleteMember }: FamilyTreeVi
         const notes = member.notes?.toLowerCase() || '';
         if (notes.includes('جد') || notes.includes('جدة')) generation = 1;
         else if (notes.includes('والد') || notes.includes('والدة')) generation = 2;
-        else if (notes.includes('ابن') || notes.includes('ابنة') || notes.includes('طفل')) generation = 3;
+        else if (notes.includes('ابن') || notes.includes('ابنة')) generation = 3;
         else generation = 2; // Default to parent generation
       }
       
