@@ -58,6 +58,8 @@ export const familyMembers = pgTable("family_members", {
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
   arabicName: varchar("arabic_name"),
+  laqab: varchar("laqab"), // لقب - title/honorific
+  kunya: varchar("kunya"), // كنية - nickname/teknonym
   birthDate: timestamp("birth_date"),
   deathDate: timestamp("death_date"),
   gender: varchar("gender", { length: 10 }),
@@ -71,6 +73,7 @@ export const familyMembers = pgTable("family_members", {
   profileImageUrl: varchar("profile_image_url"),
   phone: varchar("phone"),
   email: varchar("email"),
+  socialMedia: jsonb("social_media"), // JSON field for social media links
   education: text("education"),
   marriageDate: timestamp("marriage_date"),
   marriagePlace: text("marriage_place"),

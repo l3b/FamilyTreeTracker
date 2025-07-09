@@ -121,7 +121,7 @@ export default function MemberProfile() {
   const memberPhotos = photos.filter((photo: any) => photo.familyMemberId === member.id);
 
   // Default profile image based on gender
-  const profileImage = member.profileImage || 
+  const profileImage = member.profileImageUrl || 
     (member.gender === 'female' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg');
 
   return (
@@ -144,7 +144,22 @@ export default function MemberProfile() {
               
               <div className="flex-1">
                 <div className="flex justify-between items-start mb-2">
-                  <h1 className="text-3xl font-bold">{member.arabicName || member.firstName}</h1>
+                  <div className="space-y-1">
+                    <h1 className="text-3xl font-bold">
+                      {member.arabicName || `${member.firstName} ${member.lastName || ''}`}
+                    </h1>
+                    {member.laqab && (
+                      <p className="text-lg text-muted-foreground">{member.laqab}</p>
+                    )}
+                    {member.kunya && (
+                      <p className="text-md text-muted-foreground italic">{member.kunya}</p>
+                    )}
+                    {member.arabicName && (
+                      <p className="text-sm text-muted-foreground">
+                        {member.firstName} {member.lastName || ''}
+                      </p>
+                    )}
+                  </div>
                   {canEdit && (
                     <Button
                       variant="outline"
@@ -214,6 +229,22 @@ export default function MemberProfile() {
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
                       <span dir="ltr">{member.email}</span>
+                    </div>
+                  )}
+                  {member.socialMedia && member.socialMedia.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">وسائل التواصل:</span>
+                      {member.socialMedia.map((social: any, index: number) => (
+                        <a
+                          key={index}
+                          href={social.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline text-sm"
+                        >
+                          {social.platform}
+                        </a>
+                      ))}
                     </div>
                   )}
                   {member.deathDate && (
@@ -430,6 +461,18 @@ export default function MemberProfile() {
                     <dt className="font-medium text-muted-foreground">الاسم الكامل (إنجليزي)</dt>
                     <dd>{member.firstName} {member.lastName || ''}</dd>
                   </div>
+                  {member.laqab && (
+                    <div>
+                      <dt className="font-medium text-muted-foreground">اللقب</dt>
+                      <dd>{member.laqab}</dd>
+                    </div>
+                  )}
+                  {member.kunya && (
+                    <div>
+                      <dt className="font-medium text-muted-foreground">الكنية</dt>
+                      <dd>{member.kunya}</dd>
+                    </div>
+                  )}
                   <div>
                     <dt className="font-medium text-muted-foreground">الجنس</dt>
                     <dd>{member.gender || '-'}</dd>
@@ -462,6 +505,24 @@ export default function MemberProfile() {
                     <div>
                       <dt className="font-medium text-muted-foreground">البريد الإلكتروني</dt>
                       <dd dir="ltr">{member.email}</dd>
+                    </div>
+                  )}
+                  {member.socialMedia && member.socialMedia.length > 0 && (
+                    <div className="md:col-span-2">
+                      <dt className="font-medium text-muted-foreground mb-2">وسائل التواصل الاجتماعي</dt>
+                      <dd className="flex flex-wrap gap-2">
+                        {member.socialMedia.map((social: any, index: number) => (
+                          <a
+                            key={index}
+                            href={social.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm hover:bg-primary/20 transition-colors"
+                          >
+                            {social.platform}
+                          </a>
+                        ))}
+                      </dd>
                     </div>
                   )}
                   {member.marriageDate && (
