@@ -35,6 +35,7 @@ const editMemberSchema = z.object({
   birthDate: z.date().optional(),
   deathDate: z.date().optional(),
   birthPlace: z.string().optional(),
+  currentLocation: z.string().optional(),
   deathPlace: z.string().optional(),
   occupation: z.string().optional(),
   education: z.string().optional(),
@@ -79,6 +80,7 @@ export default function EditMemberForm({ member, isOpen, onClose }: EditMemberFo
       birthDate: member.birthDate ? new Date(member.birthDate) : undefined,
       deathDate: member.deathDate ? new Date(member.deathDate) : undefined,
       birthPlace: member.birthPlace || "",
+      currentLocation: member.currentLocation || "",
       deathPlace: member.deathPlace || "",
       occupation: member.occupation || "",
       education: member.education || "",
@@ -506,6 +508,20 @@ export default function EditMemberForm({ member, isOpen, onClose }: EditMemberFo
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>مكان الميلاد</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="currentLocation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>مكان الإقامة الحالي</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>

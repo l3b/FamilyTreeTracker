@@ -120,9 +120,9 @@ export default function MemberProfile() {
   const memberDocuments = documents.filter((doc: any) => doc.familyMemberId === member.id);
   const memberPhotos = photos.filter((photo: any) => photo.familyMemberId === member.id);
 
-  // Default profile image based on gender
-  const profileImage = member.profileImageUrl || 
-    (member.gender === 'female' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg');
+  // Default profile image based on gender - check both profileImageUrl fields for compatibility
+  const profileImage = member.profileImageUrl || member.profileImage || 
+    (member.gender === 'female' || member.gender === 'أنثى' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg');
 
   return (
     <div className="min-h-screen bg-background">
@@ -203,8 +203,14 @@ export default function MemberProfile() {
                   )}
                   {member.birthPlace && (
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{member.birthPlace}</span>
+                      <MapPin className="h-4 w-4 text-blue-500" />
+                      <span>مكان الميلاد: {member.birthPlace}</span>
+                    </div>
+                  )}
+                  {member.currentLocation && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-green-500" />
+                      <span>مكان الإقامة: {member.currentLocation}</span>
                     </div>
                   )}
                   {member.occupation && (
@@ -284,7 +290,7 @@ export default function MemberProfile() {
                       <Link href={`/member/${father.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
                         <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
                           <img 
-                            src={father.profileImage || '/arabic-male-silhouette.svg'} 
+                            src={father.profileImageUrl || father.profileImage || '/arabic-male-silhouette.svg'} 
                             alt={father.arabicName || father.firstName}
                             className="w-full h-full object-cover"
                           />
@@ -299,7 +305,7 @@ export default function MemberProfile() {
                       <Link href={`/member/${mother.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
                         <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
                           <img 
-                            src={mother.profileImage || '/arabic-female-silhouette.svg'} 
+                            src={mother.profileImageUrl || mother.profileImage || '/arabic-female-silhouette.svg'} 
                             alt={mother.arabicName || mother.firstName}
                             className="w-full h-full object-cover"
                           />
@@ -328,7 +334,7 @@ export default function MemberProfile() {
                   <Link href={`/member/${spouse.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
                     <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
                       <img 
-                        src={spouse.profileImage || (spouse.gender === 'female' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg')} 
+                        src={spouse.profileImageUrl || spouse.profileImage || (spouse.gender === 'female' || spouse.gender === 'أنثى' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg')} 
                         alt={spouse.arabicName || spouse.firstName}
                         className="w-full h-full object-cover"
                       />
@@ -356,7 +362,7 @@ export default function MemberProfile() {
                       <Link key={child.id} href={`/member/${child.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
                         <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
                           <img 
-                            src={child.profileImage || (child.gender === 'female' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg')} 
+                            src={child.profileImageUrl || child.profileImage || (child.gender === 'female' || child.gender === 'أنثى' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg')} 
                             alt={child.arabicName || child.firstName}
                             className="w-full h-full object-cover"
                           />

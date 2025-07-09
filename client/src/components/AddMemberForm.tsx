@@ -86,6 +86,7 @@ export default function AddMemberForm({ onClose, existingMembers, relationshipCo
     motherId: "",
     spouseId: "",
     birthPlace: "",
+    currentLocation: "",
     occupation: "",
     notes: "",
     ...getRelationshipFields(),
@@ -345,6 +346,18 @@ export default function AddMemberForm({ onClose, existingMembers, relationshipCo
                 value={formData.birthPlace}
                 onChange={(e) => handleChange("birthPlace", e.target.value)}
                 placeholder="مثل: الرياض، المملكة العربية السعودية"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="currentLocation" className="text-heritage-dark font-medium">
+                مكان الإقامة الحالي
+              </Label>
+              <Input
+                id="currentLocation"
+                value={formData.currentLocation}
+                onChange={(e) => handleChange("currentLocation", e.target.value)}
+                placeholder="مثل: جدة، المملكة العربية السعودية"
               />
             </div>
 

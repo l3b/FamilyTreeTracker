@@ -67,6 +67,7 @@ export const familyMembers = pgTable("family_members", {
   motherId: integer("mother_id").references(() => familyMembers.id),
   spouseId: integer("spouse_id").references(() => familyMembers.id),
   birthPlace: text("birth_place"),
+  currentLocation: text("current_location"), // مكان الإقامة الحالي
   deathPlace: text("death_place"),
   occupation: text("occupation"),
   notes: text("notes"),
