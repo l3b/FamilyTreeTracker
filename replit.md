@@ -129,6 +129,8 @@ This is a comprehensive Arabic family genealogy platform designed to help Arabic
 - July 09, 2025: Added profile editing functionality with role-based permissions (admin can edit any profile, users can edit their own family)
 - July 09, 2025: Improved member profile display with comprehensive information tabs and detailed information view
 - July 09, 2025: Fixed member profile loading and navigation issues
+- July 09, 2025: Fixed gender validation issue with automatic gender determination based on relationships
+- July 09, 2025: Improved Arabic terminology by changing "أطفال" to "أبناء" and "إضافة طفل" to "إضافة ابن" throughout the interface
 
 ## User Preferences
 

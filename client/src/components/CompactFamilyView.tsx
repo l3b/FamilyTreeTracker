@@ -363,7 +363,7 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
           {/* Children */}
           {(family.children.length > 0 || true) && (
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-2">الأطفال</div>
+              <div className="text-xs text-gray-500 mb-2">الأبناء</div>
               <div className="flex justify-center gap-4">
                 {family.displayChildren.map((child) => (
                   <div key={child.id}>
@@ -373,7 +373,7 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
                 {family.children.length === 0 && (
                   renderPersonCard(
                     null,
-                    'إضافة طفل',
+                    'إضافة ابن',
                     'sm',
                     () => onAddMember('child', currentCenter.id)
                   )
@@ -381,7 +381,7 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
                 {family.children.length > 0 && family.children.length < 3 && (
                   renderPersonCard(
                     null,
-                    'إضافة طفل',
+                    'إضافة ابن',
                     'sm',
                     () => onAddMember('child', currentCenter.id)
                   )
@@ -394,7 +394,7 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
                   size="sm"
                   className="mt-2 text-xs"
                 >
-                  عرض جميع الأطفال ({family.children.length})
+                  عرض جميع الأبناء ({family.children.length})
                 </Button>
               )}
               {family.children.length > 3 && showAllChildren && (
