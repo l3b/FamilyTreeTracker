@@ -72,7 +72,11 @@ export default function GedcomUpload({ onClose }: GedcomUploadProps) {
 
     try {
       const text = await selectedFile.text();
+      console.log('GEDCOM file text length:', text.length);
       const parsedData = parseGedcom(text);
+      console.log('Client-side parsed GEDCOM:', parsedData);
+      console.log('Individuals count:', parsedData.individuals?.length);
+      console.log('Families count:', parsedData.families?.length);
       setPreviewData(parsedData);
     } catch (error) {
       toast({
@@ -158,19 +162,19 @@ export default function GedcomUpload({ onClose }: GedcomUploadProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div className="text-center p-3 bg-heritage-beige rounded-lg">
                   <div className="text-2xl font-bold text-heritage-brown">
-                    {previewData.individuals?.length || 0}
+                    {previewData?.individuals?.length || 0}
                   </div>
                   <div className="text-sm text-heritage-dark">أفراد العائلة</div>
                 </div>
                 <div className="text-center p-3 bg-heritage-beige rounded-lg">
                   <div className="text-2xl font-bold text-heritage-green">
-                    {previewData.families?.length || 0}
+                    {previewData?.families?.length || 0}
                   </div>
                   <div className="text-sm text-heritage-dark">العائلات</div>
                 </div>
                 <div className="text-center p-3 bg-heritage-beige rounded-lg">
                   <div className="text-2xl font-bold text-heritage-gold">
-                    {previewData.sources?.length || 0}
+                    {previewData?.sources?.length || 0}
                   </div>
                   <div className="text-sm text-heritage-dark">المصادر</div>
                 </div>
