@@ -189,7 +189,7 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
             />
           ) : (
             <div className={`${isCenter ? 'text-heritage-brown' : 'text-blue-600'} ${size === 'lg' ? 'text-lg' : 'text-sm'}`}>
-              <i className={`fas ${person.gender === 'ذكر' ? 'fa-male' : person.gender === 'أنثى' ? 'fa-female' : 'fa-user'}`}></i>
+              <i className={`fas ${person.gender === 'male' || person.gender === 'ذكر' ? 'fa-male' : person.gender === 'female' || person.gender === 'أنثى' ? 'fa-female' : 'fa-user'}`}></i>
             </div>
           )}
           
