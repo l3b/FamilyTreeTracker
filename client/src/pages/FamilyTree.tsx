@@ -281,6 +281,7 @@ export default function FamilyTree() {
         <AddMemberForm
           onClose={handleCloseAddForm}
           existingMembers={members}
+          relationshipContext={relationshipContext}
         />
       )}
 

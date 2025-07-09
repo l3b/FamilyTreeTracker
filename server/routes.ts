@@ -195,7 +195,7 @@ function parseGedcom(gedcomText: string): ParsedGedcom {
           parseNameField(currentRecord, value);
           break;
         case 'SEX':
-          currentRecord.gender = value === 'M' ? 'ذكر' : value === 'F' ? 'أنثى' : value;
+          currentRecord.gender = value === 'M' ? 'male' : value === 'F' ? 'female' : value;
           break;
         case 'BIRT':
           currentSubRecord = 'BIRT';

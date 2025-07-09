@@ -12,22 +12,81 @@ import { insertFamilyMemberSchema } from "@shared/schema";
 interface AddMemberFormProps {
   onClose: () => void;
   existingMembers: any[];
+  relationshipContext?: { type: string; relatedTo?: number } | null;
 }
 
-export default function AddMemberForm({ onClose, existingMembers }: AddMemberFormProps) {
+export default function AddMemberForm({ onClose, existingMembers, relationshipContext }: AddMemberFormProps) {
+  // Auto-determine gender based on relationship
+  const getAutoGender = (relationship: string): string => {
+    switch (relationship) {
+      case 'father':
+      case 'son':
+      case 'grandfather':
+      case 'paternalGrandfather':
+      case 'maternalGrandfather':
+        return 'male';
+      case 'mother':
+      case 'daughter':
+      case 'grandmother':
+      case 'paternalGrandmother':
+      case 'maternalGrandmother':
+        return 'female';
+      default:
+        return '';
+    }
+  };
+
+  // Auto-set relationship fields based on context
+  const getRelationshipFields = () => {
+    if (!relationshipContext) return {};
+    
+    const { type, relatedTo } = relationshipContext;
+    const fields: any = {};
+    
+    if (relatedTo) {
+      switch (type) {
+        case 'father':
+          fields.fatherId = relatedTo.toString();
+          break;
+        case 'mother':
+          fields.motherId = relatedTo.toString();
+          break;
+        case 'spouse':
+          fields.spouseId = relatedTo.toString();
+          break;
+        case 'child':
+        case 'son':
+        case 'daughter':
+          // Set the relatedTo person as parent based on their gender
+          const relatedPerson = existingMembers.find(m => m.id === relatedTo);
+          if (relatedPerson) {
+            if (relatedPerson.gender === 'male' || relatedPerson.gender === 'ذكر') {
+              fields.fatherId = relatedTo.toString();
+            } else if (relatedPerson.gender === 'female' || relatedPerson.gender === 'أنثى') {
+              fields.motherId = relatedTo.toString();
+            }
+          }
+          break;
+      }
+    }
+    
+    return fields;
+  };
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     arabicName: "",
     birthDate: "",
     deathDate: "",
-    gender: "",
+    gender: relationshipContext ? getAutoGender(relationshipContext.type) : "",
     fatherId: "",
     motherId: "",
     spouseId: "",
     birthPlace: "",
     occupation: "",
     notes: "",
+    ...getRelationshipFields(),
   });
 
   const { toast } = useToast();
@@ -107,8 +166,8 @@ export default function AddMemberForm({ onClose, existingMembers }: AddMemberFor
   };
 
   // Filter members for parent/spouse selection
-  const maleMembers = existingMembers.filter(member => member.gender === "ذكر");
-  const femaleMembers = existingMembers.filter(member => member.gender === "أنثى");
+  const maleMembers = existingMembers.filter(member => member.gender === "male" || member.gender === "ذكر");
+  const femaleMembers = existingMembers.filter(member => member.gender === "female" || member.gender === "أنثى");
   const allMembers = existingMembers;
 
   return (
@@ -165,14 +224,23 @@ export default function AddMemberForm({ onClose, existingMembers }: AddMemberFor
 
           {/* Gender */}
           <div>
-            <Label className="text-heritage-dark font-medium">الجنس</Label>
-            <Select value={formData.gender} onValueChange={(value) => handleChange("gender", value)}>
+            <Label className="text-heritage-dark font-medium">
+              الجنس
+              {relationshipContext && formData.gender && (
+                <span className="text-sm text-gray-500 mr-2">(محدد تلقائياً)</span>
+              )}
+            </Label>
+            <Select 
+              value={formData.gender} 
+              onValueChange={(value) => handleChange("gender", value)}
+              disabled={relationshipContext && formData.gender !== ''}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="اختر الجنس" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ذكر">ذكر</SelectItem>
-                <SelectItem value="أنثى">أنثى</SelectItem>
+                <SelectItem value="male">ذكر</SelectItem>
+                <SelectItem value="female">أنثى</SelectItem>
               </SelectContent>
             </Select>
           </div>

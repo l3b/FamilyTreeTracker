@@ -28,7 +28,10 @@ const editMemberSchema = z.object({
   arabicName: z.string().optional(),
   laqab: z.string().optional(),
   kunya: z.string().optional(),
-  gender: z.enum(["male", "female"]).optional(),
+  gender: z.union([
+    z.enum(["male", "female", "ذكر", "أنثى"]),
+    z.string()
+  ]).optional(),
   birthDate: z.date().optional(),
   deathDate: z.date().optional(),
   birthPlace: z.string().optional(),
@@ -72,7 +75,7 @@ export default function EditMemberForm({ member, isOpen, onClose }: EditMemberFo
       arabicName: member.arabicName || "",
       laqab: member.laqab || "",
       kunya: member.kunya || "",
-      gender: member.gender || undefined,
+      gender: member.gender === 'ذكر' ? 'male' : member.gender === 'أنثى' ? 'female' : member.gender || undefined,
       birthDate: member.birthDate ? new Date(member.birthDate) : undefined,
       deathDate: member.deathDate ? new Date(member.deathDate) : undefined,
       birthPlace: member.birthPlace || "",
