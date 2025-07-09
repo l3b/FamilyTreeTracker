@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 
 interface FamilyViewProps {
@@ -155,9 +156,11 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
         </div>
         
         <div className="text-center mt-2 min-w-[80px]">
-          <div className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'}`}>
-            {person.firstName} {person.lastName}
-          </div>
+          <Link href={`/member/${person.id}`}>
+            <a className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'} hover:underline cursor-pointer`}>
+              {person.firstName} {person.lastName}
+            </a>
+          </Link>
           {person.arabicName && person.arabicName !== `${person.firstName} ${person.lastName}` && (
             <div className="text-xs text-gray-500">{person.arabicName}</div>
           )}

@@ -11,6 +11,7 @@ import News from "@/pages/News";
 import Documents from "@/pages/Documents";
 import Photos from "@/pages/Photos";
 import AdminPanel from "@/pages/AdminPanel";
+import MemberProfile from "@/pages/MemberProfile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -39,6 +40,7 @@ function Router() {
           <Route path="/documents" component={Documents} />
           <Route path="/photos" component={Photos} />
           <Route path="/admin" component={AdminPanel} />
+          <Route path="/member/:id" component={MemberProfile} />
         </>
       )}
       <Route component={NotFound} />
