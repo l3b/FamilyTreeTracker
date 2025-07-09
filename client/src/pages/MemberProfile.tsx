@@ -142,10 +142,8 @@ export default function MemberProfile() {
                             {ancestor.arabicName || ancestor.firstName}
                           </span>
                         ) : (
-                          <Link href={`/member/${ancestor.id}`}>
-                            <a className="hover:text-primary hover:underline">
-                              {ancestor.arabicName || ancestor.firstName}
-                            </a>
+                          <Link href={`/member/${ancestor.id}`} className="hover:text-primary hover:underline">
+                            {ancestor.arabicName || ancestor.firstName}
                           </Link>
                         )}
                       </span>
@@ -207,37 +205,33 @@ export default function MemberProfile() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {father && (
-                      <Link href={`/member/${father.id}`}>
-                        <a className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
-                          <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
-                            <img 
-                              src={father.profileImage || '/arabic-male-silhouette.svg'} 
-                              alt={father.arabicName || father.firstName}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <p className="font-medium">{father.arabicName || father.firstName}</p>
-                            <p className="text-sm text-muted-foreground">الأب</p>
-                          </div>
-                        </a>
+                      <Link href={`/member/${father.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
+                          <img 
+                            src={father.profileImage || '/arabic-male-silhouette.svg'} 
+                            alt={father.arabicName || father.firstName}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <p className="font-medium">{father.arabicName || father.firstName}</p>
+                          <p className="text-sm text-muted-foreground">الأب</p>
+                        </div>
                       </Link>
                     )}
                     {mother && (
-                      <Link href={`/member/${mother.id}`}>
-                        <a className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
-                          <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
-                            <img 
-                              src={mother.profileImage || '/arabic-female-silhouette.svg'} 
-                              alt={mother.arabicName || mother.firstName}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <p className="font-medium">{mother.arabicName || mother.firstName}</p>
-                            <p className="text-sm text-muted-foreground">الأم</p>
-                          </div>
-                        </a>
+                      <Link href={`/member/${mother.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
+                          <img 
+                            src={mother.profileImage || '/arabic-female-silhouette.svg'} 
+                            alt={mother.arabicName || mother.firstName}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <p className="font-medium">{mother.arabicName || mother.firstName}</p>
+                          <p className="text-sm text-muted-foreground">الأم</p>
+                        </div>
                       </Link>
                     )}
                   </div>
@@ -255,19 +249,17 @@ export default function MemberProfile() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Link href={`/member/${spouse.id}`}>
-                    <a className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
-                        <img 
-                          src={spouse.profileImage || (spouse.gender === 'female' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg')} 
-                          alt={spouse.arabicName || spouse.firstName}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <p className="font-medium">{spouse.arabicName || spouse.firstName}</p>
-                      </div>
-                    </a>
+                  <Link href={`/member/${spouse.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
+                      <img 
+                        src={spouse.profileImage || (spouse.gender === 'female' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg')} 
+                        alt={spouse.arabicName || spouse.firstName}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p className="font-medium">{spouse.arabicName || spouse.firstName}</p>
+                    </div>
                   </Link>
                 </CardContent>
               </Card>
@@ -285,19 +277,17 @@ export default function MemberProfile() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {children.map((child: any) => (
-                      <Link key={child.id} href={`/member/${child.id}`}>
-                        <a className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
-                          <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
-                            <img 
-                              src={child.profileImage || (child.gender === 'female' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg')} 
-                              alt={child.arabicName || child.firstName}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <p className="font-medium">{child.arabicName || child.firstName}</p>
-                          </div>
-                        </a>
+                      <Link key={child.id} href={`/member/${child.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
+                          <img 
+                            src={child.profileImage || (child.gender === 'female' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg')} 
+                            alt={child.arabicName || child.firstName}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <p className="font-medium">{child.arabicName || child.firstName}</p>
+                        </div>
                       </Link>
                     ))}
                   </div>
@@ -317,19 +307,17 @@ export default function MemberProfile() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {siblings.map((sibling: any) => (
-                      <Link key={sibling.id} href={`/member/${sibling.id}`}>
-                        <a className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
-                          <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
-                            <img 
-                              src={sibling.profileImage || (sibling.gender === 'female' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg')} 
-                              alt={sibling.arabicName || sibling.firstName}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <p className="font-medium">{sibling.arabicName || sibling.firstName}</p>
-                          </div>
-                        </a>
+                      <Link key={sibling.id} href={`/member/${sibling.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
+                          <img 
+                            src={sibling.profileImage || (sibling.gender === 'female' ? '/arabic-female-silhouette.svg' : '/arabic-male-silhouette.svg')} 
+                            alt={sibling.arabicName || sibling.firstName}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <p className="font-medium">{sibling.arabicName || sibling.firstName}</p>
+                        </div>
                       </Link>
                     ))}
                   </div>
