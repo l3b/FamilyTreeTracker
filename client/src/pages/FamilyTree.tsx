@@ -50,7 +50,7 @@ export default function FamilyTree() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest(`/api/family-members/${id}`, "DELETE");
+      await apiRequest(`/api/family-members/${id}`, { method: "DELETE" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/family-members"] });
@@ -80,7 +80,7 @@ export default function FamilyTree() {
 
   const cleanupMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest('POST', '/api/admin/cleanup', {});
+      await apiRequest('/api/admin/cleanup', { method: 'POST', body: {} });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/family-members"] });
