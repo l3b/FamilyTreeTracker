@@ -15,7 +15,7 @@ export default function MemberProfile() {
   const { id } = useParams();
   
   const { data: member, isLoading: memberLoading } = useQuery({
-    queryKey: ["/api/family-members", id],
+    queryKey: [`/api/family-members/${id}`],
     enabled: !!id,
   });
 
@@ -135,7 +135,7 @@ export default function MemberProfile() {
                 <div className="mb-4">
                   <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
                     {fatherChain.map((ancestor, index) => (
-                      <span key={ancestor.id} className="flex items-center">
+                      <div key={ancestor.id} className="flex items-center">
                         {index > 0 && <span className="mx-2">بن</span>}
                         {ancestor.id === member.id ? (
                           <span className="font-medium text-foreground">
@@ -146,7 +146,7 @@ export default function MemberProfile() {
                             {ancestor.arabicName || ancestor.firstName}
                           </Link>
                         )}
-                      </span>
+                      </div>
                     ))}
                   </div>
                 </div>
