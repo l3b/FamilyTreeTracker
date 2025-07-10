@@ -3,7 +3,8 @@ import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
-import { Crown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Crown, ZoomIn, ZoomOut, Users } from "lucide-react";
 
 interface FamilyViewProps {
   members: any[];
@@ -11,11 +12,13 @@ interface FamilyViewProps {
   onAddMember: (relationship: string, relatedTo?: number) => void;
   centerPerson?: any;
   onCenterChange?: (person: any) => void;
+  showMalesOnly?: boolean;
 }
 
-export default function FamilyView({ members, onDeleteMember, onAddMember, centerPerson: propCenterPerson, onCenterChange }: FamilyViewProps) {
+export default function FamilyView({ members, onDeleteMember, onAddMember, centerPerson: propCenterPerson, onCenterChange, showMalesOnly = false }: FamilyViewProps) {
   const { user } = useAuth();
   const [localCenterPerson, setLocalCenterPerson] = useState<any>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(2); // 1 = minimal, 2 = normal, 3 = extended, 4 = full
 
   // Get linked profile
   const { data: linkedProfile } = useQuery({
@@ -24,6 +27,92 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
   });
 
   const currentCenter = propCenterPerson || localCenterPerson || linkedProfile || members[0];
+
+  // Filter members based on male-only view and paternal lineage
+  const getFilteredMembers = () => {
+    if (!showMalesOnly) return members;
+    
+    // For male-only view, we want to show the paternal lineage
+    const maleMembers = members.filter(member => 
+      member.gender === 'male' || member.gender === 'ذكر'
+    );
+    
+    return maleMembers;
+  };
+
+  const filteredMembers = getFilteredMembers();
+
+  // Enhanced relationship finder that includes extended family based on zoom level
+  const getExtendedRelatives = (person: any, members: any[], level: number) => {
+    const relatives: any = {
+      // Core family
+      father: members.find(m => m.id === person.fatherId),
+      mother: showMalesOnly ? null : members.find(m => m.id === person.motherId),
+      spouse: showMalesOnly ? null : members.find(m => m.id === person.spouseId),
+      children: members.filter(m => m.fatherId === person.id || m.motherId === person.id),
+      siblings: members.filter(m => 
+        (m.fatherId === person.fatherId && person.fatherId) ||
+        (!showMalesOnly && m.motherId === person.motherId && person.motherId)
+      ).filter(m => m.id !== person.id),
+      
+      // Extended family (based on zoom level)
+      paternalUncles: [],
+      maternalUncles: [],
+      paternalGrandfather: null,
+      paternalGrandmother: null,
+      maternalGrandfather: null,
+      maternalGrandmother: null,
+      paternalGreatGrandfather: null,
+      paternalGreatUncles: [],
+    };
+
+    // Find father's family
+    if (relatives.father) {
+      relatives.paternalGrandfather = members.find(m => m.id === relatives.father.fatherId);
+      if (!showMalesOnly) {
+        relatives.paternalGrandmother = members.find(m => m.id === relatives.father.motherId);
+      }
+      
+      // Paternal uncles (father's brothers)
+      if (level >= 2) {
+        relatives.paternalUncles = members.filter(m => 
+          m.fatherId === relatives.father.fatherId && 
+          m.id !== relatives.father.id &&
+          (showMalesOnly ? (m.gender === 'male' || m.gender === 'ذكر') : true)
+        );
+      }
+    }
+
+    // Find mother's family (only if not male-only view)
+    if (!showMalesOnly && relatives.mother) {
+      relatives.maternalGrandfather = members.find(m => m.id === relatives.mother.fatherId);
+      relatives.maternalGrandmother = members.find(m => m.id === relatives.mother.motherId);
+      
+      if (level >= 2) {
+        relatives.maternalUncles = members.filter(m => 
+          m.fatherId === relatives.mother.fatherId && 
+          m.id !== relatives.mother.id
+        );
+      }
+    }
+
+    // Great-grandfather and his brothers (level 3+)
+    if (level >= 3 && relatives.paternalGrandfather) {
+      relatives.paternalGreatGrandfather = members.find(m => m.id === relatives.paternalGrandfather.fatherId);
+      
+      if (relatives.paternalGreatGrandfather) {
+        relatives.paternalGreatUncles = members.filter(m => 
+          m.fatherId === relatives.paternalGreatGrandfather.id && 
+          m.id !== relatives.paternalGrandfather.id &&
+          (showMalesOnly ? (m.gender === 'male' || m.gender === 'ذكر') : true)
+        );
+      }
+    }
+
+    return relatives;
+  };
+
+  const relatives = getExtendedRelatives(currentCenter, filteredMembers, zoomLevel);
 
   if (!currentCenter) {
     return (
@@ -39,39 +128,7 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
     );
   }
 
-  // Find family relationships for current center person
-  const getRelatives = (person: any) => {
-    const relatives = {
-      father: members.find(m => m.id === person.fatherId),
-      mother: members.find(m => m.id === person.motherId),
-      spouse: members.find(m => m.id === person.spouseId),
-      children: members.filter(m => m.fatherId === person.id || m.motherId === person.id),
-      siblings: members.filter(m => 
-        (m.fatherId === person.fatherId && person.fatherId) ||
-        (m.motherId === person.motherId && person.motherId)
-      ).filter(m => m.id !== person.id),
-      
-      // Grandparents
-      paternalGrandfather: null,
-      paternalGrandmother: null,
-      maternalGrandfather: null,
-      maternalGrandmother: null,
-    };
 
-    // Find grandparents
-    if (relatives.father) {
-      relatives.paternalGrandfather = members.find(m => m.id === relatives.father.fatherId);
-      relatives.paternalGrandmother = members.find(m => m.id === relatives.father.motherId);
-    }
-    if (relatives.mother) {
-      relatives.maternalGrandfather = members.find(m => m.id === relatives.mother.fatherId);
-      relatives.maternalGrandmother = members.find(m => m.id === relatives.mother.motherId);
-    }
-
-    return relatives;
-  };
-
-  const relatives = getRelatives(currentCenter);
 
   const renderPersonCard = (person: any, relationship: string, size: 'sm' | 'md' | 'lg' = 'md', onClickAdd?: () => void) => {
     if (!person) {
@@ -164,15 +221,59 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
     );
   };
 
+  const getZoomLabel = (level: number) => {
+    switch(level) {
+      case 1: return 'الأسرة المباشرة';
+      case 2: return 'العائلة القريبة';
+      case 3: return 'العائلة الممتدة';
+      case 4: return 'النسب الكامل';
+      default: return 'عادي';
+    }
+  };
+
   return (
     <div className="family-view-container bg-gradient-to-b from-heritage-light to-white min-h-screen p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
+      <div className="max-w-7xl mx-auto">
+        {/* Header with Zoom Controls */}
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-heritage-brown mb-2">شجرة العائلة</h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-4">
             {currentCenter.firstName} {currentCenter.lastName} في المركز
+            {showMalesOnly && ' - عرض الرجال فقط (النسب الأبوي)'}
           </p>
+          
+          {/* Zoom Controls */}
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <Button
+              onClick={() => setZoomLevel(Math.max(1, zoomLevel - 1))}
+              disabled={zoomLevel === 1}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <ZoomOut className="h-4 w-4" />
+              أقل تفصيلاً
+            </Button>
+            
+            <Badge variant="secondary" className="px-4 py-2 text-sm">
+              {getZoomLabel(zoomLevel)} ({zoomLevel}/4)
+            </Badge>
+            
+            <Button
+              onClick={() => setZoomLevel(Math.min(4, zoomLevel + 1))}
+              disabled={zoomLevel === 4}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <ZoomIn className="h-4 w-4" />
+              أكثر تفصيلاً
+            </Button>
+          </div>
+          
+          <div className="text-xs text-gray-500">
+            المستوى {zoomLevel}: {getZoomLabel(zoomLevel)}
+          </div>
         </div>
 
         {/* Family Tree Grid */}
@@ -315,15 +416,14 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
           )}
 
           {/* Children Row */}
-          <div className="flex justify-center gap-6 relative" style={{ zIndex: 2 }}>
-            {relatives.children.length > 0 ? (
-              relatives.children.map((child) => (
-                <div key={child.id}>
-                  {renderPersonCard(child, 'ابن/ابنة', 'sm')}
-                </div>
-              ))
-            ) : (
-              <div>
+          <div className="grid grid-cols-4 gap-4 relative" style={{ zIndex: 2 }}>
+            {relatives.children.slice(0, 4).map((child, index) => (
+              <div key={child.id} className="text-center">
+                {renderPersonCard(child, 'ابن/ابنة', 'sm')}
+              </div>
+            ))}
+            {relatives.children.length === 0 && (
+              <div className="col-span-4 text-center">
                 {renderPersonCard(
                   null,
                   'إضافة ابن',
@@ -332,8 +432,8 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
                 )}
               </div>
             )}
-            {relatives.children.length > 0 && (
-              <div>
+            {relatives.children.length > 0 && relatives.children.length < 4 && (
+              <div className="text-center">
                 {renderPersonCard(
                   null,
                   'إضافة ابن',
@@ -343,13 +443,103 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
               </div>
             )}
           </div>
-        </div>
 
-        {/* Navigation hint */}
-        <div className="text-center mt-8 p-4 bg-white rounded-lg shadow">
-          <p className="text-sm text-gray-600">
-            انقر على أي فرد لجعله مركز الشجرة • انقر على + لإضافة أفراد جدد
-          </p>
+          {/* Extended Family Sections based on Zoom Level */}
+          {zoomLevel >= 2 && (
+            <div className="mt-12 space-y-8">
+              {/* Paternal Uncles */}
+              {relatives.paternalUncles.length > 0 && (
+                <div className="bg-heritage-light rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-heritage-brown mb-4 text-center">
+                    أعمام الأب
+                  </h3>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    {relatives.paternalUncles.map((uncle) => (
+                      <div key={uncle.id} className="transform scale-90">
+                        {renderPersonCard(uncle, 'عم', 'sm')}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Maternal Uncles (only if not male-only view) */}
+              {!showMalesOnly && relatives.maternalUncles.length > 0 && (
+                <div className="bg-blue-50 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-blue-700 mb-4 text-center">
+                    أخوال الأم
+                  </h3>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    {relatives.maternalUncles.map((uncle) => (
+                      <div key={uncle.id} className="transform scale-90">
+                        {renderPersonCard(uncle, 'خال', 'sm')}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Great-Grandfather and Great-Uncles (Level 3+) */}
+          {zoomLevel >= 3 && (
+            <div className="mt-12 space-y-8">
+              {relatives.paternalGreatGrandfather && (
+                <div className="bg-heritage-beige rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-heritage-brown mb-4 text-center">
+                    الجد الأكبر وأشقاؤه
+                  </h3>
+                  <div className="flex flex-wrap gap-4 justify-center items-center">
+                    <div className="transform scale-110">
+                      {renderPersonCard(relatives.paternalGreatGrandfather, 'الجد الأكبر', 'md')}
+                    </div>
+                    {relatives.paternalGreatUncles.map((greatUncle) => (
+                      <div key={greatUncle.id} className="transform scale-90">
+                        {renderPersonCard(greatUncle, 'شقيق الجد', 'sm')}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Statistics and Information Panel */}
+          {zoomLevel >= 4 && (
+            <div className="mt-12 bg-white rounded-lg shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-heritage-brown mb-4 text-center">
+                إحصائيات النسب
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div className="bg-heritage-light rounded p-3">
+                  <div className="text-2xl font-bold text-heritage-brown">
+                    {filteredMembers.length}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {showMalesOnly ? 'الرجال' : 'إجمالي الأفراد'}
+                  </div>
+                </div>
+                <div className="bg-blue-50 rounded p-3">
+                  <div className="text-2xl font-bold text-blue-700">
+                    {relatives.children.length}
+                  </div>
+                  <div className="text-sm text-gray-600">الأبناء</div>
+                </div>
+                <div className="bg-green-50 rounded p-3">
+                  <div className="text-2xl font-bold text-green-700">
+                    {relatives.siblings.length}
+                  </div>
+                  <div className="text-sm text-gray-600">الأشقاء</div>
+                </div>
+                <div className="bg-yellow-50 rounded p-3">
+                  <div className="text-2xl font-bold text-yellow-700">
+                    {relatives.paternalUncles.length + relatives.maternalUncles.length}
+                  </div>
+                  <div className="text-sm text-gray-600">الأعمام والأخوال</div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
