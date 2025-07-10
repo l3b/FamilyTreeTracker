@@ -52,11 +52,11 @@ function processRelationships(individuals: GedcomIndividual[], families: GedcomF
     if ((individual as any).parentFamily) {
       const parentFamily = familyMap.get((individual as any).parentFamily);
       if (parentFamily) {
-        if (parentFamily.husband) {
+        if (parentFamily.husband && !individual.father) {
           individual.father = parentFamily.husband;
           console.log(`Set father for ${individual.name}: ${parentFamily.husband}`);
         }
-        if (parentFamily.wife) {
+        if (parentFamily.wife && !individual.mother) {
           individual.mother = parentFamily.wife;
           console.log(`Set mother for ${individual.name}: ${parentFamily.wife}`);
         }
@@ -217,6 +217,19 @@ function parseGedcom(gedcomText: string): ParsedGedcom {
           break;
         case 'MARR':
           currentSubRecord = 'MARR';
+          break;
+        case '_FREL':
+          // Custom tag for father relationship - value is GEDCOM ID
+          currentRecord.father = value.replace(/[@]/g, '');
+          break;
+        case '_MREL':
+          // Custom tag for mother relationship - value is GEDCOM ID
+          currentRecord.mother = value.replace(/[@]/g, '');
+          break;
+        case 'SPOUSE':
+          // Custom tag referencing a spouse by GEDCOM ID
+          if (!currentRecord.spouse) currentRecord.spouse = [];
+          currentRecord.spouse.push(value.replace(/[@]/g, ''));
           break;
         case 'FAMC':
           // Family as Child - parent family
@@ -848,13 +861,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clearExisting = req.body.clearExisting === 'true';
       
       // Get existing family members
-      const existingMembers = await storage.getFamilyMembers(userId);
+      let existingMembers = await storage.getFamilyMembers(userId);
       
       // Clear existing data if requested
       let clearedCount = 0;
       if (clearExisting && existingMembers.length > 0) {
         console.log(`Clearing ${existingMembers.length} existing family members for fresh import`);
-        
+
         try {
           // First, clear all relationship references to avoid foreign key conflicts
           await db.update(familyMembers)
@@ -868,8 +881,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Then delete all members for this user
           await db.delete(familyMembers)
             .where(eq(familyMembers.userId, userId));
-          
+
           clearedCount = existingMembers.length;
+          // Reset existing members array since we've removed them
+          existingMembers = [];
         } catch (clearError) {
           console.error('Error clearing existing members:', clearError);
           throw new Error('Failed to clear existing family members');
