@@ -81,6 +81,13 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
     member.userId === currentUser.id || !member.userId
   );
 
+  // Function to get father's name from family members
+  const getFatherName = (member: any) => {
+    if (!member.fatherId) return '';
+    const father = familyMembers.find(m => m.id === member.fatherId);
+    return father ? (father.arabicName || father.firstName || '') : '';
+  };
+
   // Function to format name display
   const formatDisplayName = (member: any) => {
     if (member.arabicName) {
@@ -89,7 +96,7 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
     
     // Build Arabic-style name from components
     const firstName = member.firstName || '';
-    const fatherName = member.fatherName || '';
+    const fatherName = getFatherName(member);
     const lastName = member.lastName || '';
     
     if (firstName && fatherName) {
@@ -114,8 +121,9 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
       const arabicName = member.arabicName || '';
       const firstName = member.firstName || '';
       const lastName = member.lastName || '';
-      const fatherName = member.fatherName || '';
+      const fatherName = getFatherName(member);
       const fullEnglishName = `${firstName} ${lastName}`.trim();
+      const displayName = formatDisplayName(member);
       
       // Create all possible searchable text combinations
       const searchableTexts = [
@@ -125,11 +133,16 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
         lastName,
         fatherName,
         fullEnglishName,
+        displayName,
         
         // Arabic name variations (remove بن and normalize spaces)
         arabicName.replace(/\s+بن\s+/g, ' '),
         arabicName.replace(/\s+/g, ' ').trim(),
         arabicName.replace(/بن/g, '').replace(/\s+/g, ' ').trim(),
+        
+        // Display name variations
+        displayName.replace(/\s+بن\s+/g, ' '),
+        displayName.replace(/بن/g, '').replace(/\s+/g, ' ').trim(),
         
         // Common Arabic name combinations
         `${firstName} ${fatherName}`.trim(),
@@ -143,9 +156,8 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
         // Reverse order combinations (father first)
         `${fatherName} ${firstName}`.trim(),
         
-        // Full name constructions
-        formatDisplayName(member),
-        formatDisplayName(member).replace(/\s+بن\s+/g, ' '),
+        // Split Arabic name parts
+        ...arabicName.split(/\s+/).filter(part => part.length > 1),
         
       ].filter(text => text && text.length > 0);
 
@@ -282,9 +294,16 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
 
                 {/* Results Count */}
                 {searchQuery && (
-                  <p className="text-sm text-muted-foreground mb-4">
-                    تم العثور على {searchMembers.length} من أصل {availableMembers.length} عضو
-                  </p>
+                  <div className="mb-4">
+                    <p className="text-sm text-muted-foreground">
+                      تم العثور على {searchMembers.length} من أصل {availableMembers.length} عضو
+                    </p>
+                    {searchMembers.length === 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        البحث عن: "{searchQuery}"
+                      </p>
+                    )}
+                  </div>
                 )}
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -308,6 +327,10 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
                         <div className="flex-1">
                           <p className="font-medium">
                             {formatDisplayName(member)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {member.firstName} {member.lastName}
+                            {getFatherName(member) && ` - الأب: ${getFatherName(member)}`}
                           </p>
                           {member.birthDate && (
                             <p className="text-sm text-muted-foreground">
