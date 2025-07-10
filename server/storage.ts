@@ -2,6 +2,8 @@ import {
   users,
   familyMembers,
   familyNews,
+  familyNewsLikes,
+  familyNewsComments,
   familyDocuments,
   familyPhotos,
   familyInvitations,
@@ -13,6 +15,10 @@ import {
   type InsertFamilyMember,
   type FamilyNews,
   type InsertFamilyNews,
+  type InsertFamilyNewsLike,
+  type FamilyNewsLike,
+  type InsertFamilyNewsComment,
+  type FamilyNewsComment,
   type FamilyDocument,
   type InsertFamilyDocument,
   type FamilyPhoto,
@@ -21,7 +27,7 @@ import {
   type InsertFamilyInvitation,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -42,6 +48,12 @@ export interface IStorage {
   createFamilyNews(news: InsertFamilyNews): Promise<FamilyNews>;
   updateFamilyNews(id: number, news: Partial<InsertFamilyNews>): Promise<FamilyNews>;
   deleteFamilyNews(id: number): Promise<void>;
+
+  likeFamilyNews(newsId: number, userId: string): Promise<void>;
+  unlikeFamilyNews(newsId: number, userId: string): Promise<void>;
+  getFamilyNewsLikes(newsId: number): Promise<number>;
+  createFamilyNewsComment(comment: InsertFamilyNewsComment): Promise<FamilyNewsComment>;
+  getFamilyNewsComments(newsId: number): Promise<FamilyNewsComment[]>;
 
   // Family document operations
   getFamilyDocuments(userId: string): Promise<FamilyDocument[]>;
@@ -173,6 +185,43 @@ export class DatabaseStorage implements IStorage {
 
   async deleteFamilyNews(id: number): Promise<void> {
     await db.delete(familyNews).where(eq(familyNews.id, id));
+  }
+
+  async likeFamilyNews(newsId: number, userId: string): Promise<void> {
+    await db
+      .insert(familyNewsLikes)
+      .values({ newsId, userId })
+      .onConflictDoNothing();
+  }
+
+  async unlikeFamilyNews(newsId: number, userId: string): Promise<void> {
+    await db
+      .delete(familyNewsLikes)
+      .where(and(eq(familyNewsLikes.newsId, newsId), eq(familyNewsLikes.userId, userId)));
+  }
+
+  async getFamilyNewsLikes(newsId: number): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(familyNewsLikes)
+      .where(eq(familyNewsLikes.newsId, newsId));
+    return Number(result?.count) || 0;
+  }
+
+  async createFamilyNewsComment(comment: InsertFamilyNewsComment): Promise<FamilyNewsComment> {
+    const [newComment] = await db
+      .insert(familyNewsComments)
+      .values(comment)
+      .returning();
+    return newComment;
+  }
+
+  async getFamilyNewsComments(newsId: number): Promise<FamilyNewsComment[]> {
+    return await db
+      .select()
+      .from(familyNewsComments)
+      .where(eq(familyNewsComments.newsId, newsId))
+      .orderBy(desc(familyNewsComments.createdAt));
   }
 
   // Family document operations
