@@ -32,29 +32,44 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4">روابط سريعة</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/" className="text-heritage-beige hover:text-heritage-gold transition-colors">
+                <div 
+                  onClick={() => window.location.href = "/"}
+                  className="text-heritage-beige hover:text-heritage-gold transition-colors cursor-pointer"
+                >
                   الرئيسية
-                </Link>
+                </div>
               </li>
               <li>
-                <Link href="/family-tree" className="text-heritage-beige hover:text-heritage-gold transition-colors">
+                <div 
+                  onClick={() => window.location.href = "/family-tree"}
+                  className="text-heritage-beige hover:text-heritage-gold transition-colors cursor-pointer"
+                >
                   شجرة العائلة
-                </Link>
+                </div>
               </li>
               <li>
-                <Link href="/news" className="text-heritage-beige hover:text-heritage-gold transition-colors">
+                <div 
+                  onClick={() => window.location.href = "/news"}
+                  className="text-heritage-beige hover:text-heritage-gold transition-colors cursor-pointer"
+                >
                   الأخبار
-                </Link>
+                </div>
               </li>
               <li>
-                <Link href="/documents" className="text-heritage-beige hover:text-heritage-gold transition-colors">
+                <div 
+                  onClick={() => window.location.href = "/documents"}
+                  className="text-heritage-beige hover:text-heritage-gold transition-colors cursor-pointer"
+                >
                   الوثائق
-                </Link>
+                </div>
               </li>
               <li>
-                <Link href="/photos" className="text-heritage-beige hover:text-heritage-gold transition-colors">
+                <div 
+                  onClick={() => window.location.href = "/photos"}
+                  className="text-heritage-beige hover:text-heritage-gold transition-colors cursor-pointer"
+                >
                   الصور
-                </Link>
+                </div>
               </li>
             </ul>
           </div>

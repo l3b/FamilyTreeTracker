@@ -61,9 +61,12 @@ export default function MemberProfile() {
           <Card>
             <CardContent className="text-center py-8">
               <p className="text-muted-foreground">لم يتم العثور على العضو</p>
-              <Link href="/family-tree">
-                <Button className="mt-4">العودة إلى شجرة العائلة</Button>
-              </Link>
+              <Button 
+                className="mt-4"
+                onClick={() => window.location.href = "/family-tree"}
+              >
+                العودة إلى شجرة العائلة
+              </Button>
             </CardContent>
           </Card>
         </main>
