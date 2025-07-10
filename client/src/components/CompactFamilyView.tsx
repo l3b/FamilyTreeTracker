@@ -218,9 +218,12 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
         </div>
         
         <div className="text-center mt-1">
-          <Link href={`/member/${person.id}`} className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'} truncate max-w-[60px] hover:underline cursor-pointer block`}>
+          <div 
+            onClick={() => window.location.href = `/member/${person.id}`}
+            className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'} truncate max-w-[60px] hover:underline cursor-pointer block`}
+          >
             {person.firstName}
-          </Link>
+          </div>
           {isLinkedProfile && (
             <Badge variant="secondary" className="text-xs mt-1">
               حسابك
