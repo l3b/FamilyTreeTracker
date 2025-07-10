@@ -51,11 +51,13 @@ export default function Header() {
               <NavigationMenuList>
                 {navigation.map((item) => (
                   <NavigationMenuItem key={item.name}>
-                    <Link href={item.href}>
-                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                        {item.name}
-                      </NavigationMenuLink>
-                    </Link>
+                    <NavigationMenuLink 
+                      className={navigationMenuTriggerStyle()}
+                      onClick={() => window.location.href = item.href}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {item.name}
+                    </NavigationMenuLink>
                   </NavigationMenuItem>
                 ))}
               </NavigationMenuList>
