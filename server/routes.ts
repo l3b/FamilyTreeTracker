@@ -634,7 +634,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const news = await storage.getFamilyNews(userId);
-      res.json(news);
+      const newsWithCounts = await Promise.all(
+        news.map(async (n) => {
+          const likes = await storage.getFamilyNewsLikes(n.id);
+          const comments = await storage.getFamilyNewsComments(n.id);
+          return { ...n, likesCount: likes, commentsCount: comments.length };
+        })
+      );
+      res.json(newsWithCounts);
     } catch (error) {
       console.error("Error fetching family news:", error);
       res.status(500).json({ message: "Failed to fetch family news" });
@@ -661,6 +668,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating family news:", error);
       res.status(500).json({ message: "Failed to create family news" });
+    }
+  });
+
+  app.post("/api/family-news/:id/like", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const newsId = parseInt(req.params.id);
+      await storage.likeFamilyNews(newsId, userId);
+      const count = await storage.getFamilyNewsLikes(newsId);
+      res.json({ likes: count });
+    } catch (error) {
+      console.error("Error liking news:", error);
+      res.status(500).json({ message: "Failed to like news" });
+    }
+  });
+
+  app.delete("/api/family-news/:id/like", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const newsId = parseInt(req.params.id);
+      await storage.unlikeFamilyNews(newsId, userId);
+      const count = await storage.getFamilyNewsLikes(newsId);
+      res.json({ likes: count });
+    } catch (error) {
+      console.error("Error unliking news:", error);
+      res.status(500).json({ message: "Failed to unlike news" });
+    }
+  });
+
+  app.post("/api/family-news/:id/comments", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const newsId = parseInt(req.params.id);
+      const { content } = req.body;
+      if (!content) return res.status(400).json({ message: "Content required" });
+      const comment = await storage.createFamilyNewsComment({ newsId, userId, content });
+      res.json(comment);
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      res.status(500).json({ message: "Failed to add comment" });
+    }
+  });
+
+  app.get("/api/family-news/:id/comments", isAuthenticated, async (req: any, res) => {
+    try {
+      const newsId = parseInt(req.params.id);
+      const comments = await storage.getFamilyNewsComments(newsId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
     }
   });
 
