@@ -1051,33 +1051,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const updateData: any = {};
 
-          // Map father relationship
+          // Map father relationship - only update if we have a valid father in the GEDCOM
           if (individual.father && gedcomToDbMap.has(individual.father)) {
             updateData.fatherId = gedcomToDbMap.get(individual.father);
-          } else {
-            updateData.fatherId = null;
           }
 
-          // Map mother relationship
+          // Map mother relationship - only update if we have a valid mother in the GEDCOM
           if (individual.mother && gedcomToDbMap.has(individual.mother)) {
             updateData.motherId = gedcomToDbMap.get(individual.mother);
-          } else {
-            updateData.motherId = null;
           }
 
-          // Map spouse relationship (take first available)
-          let spouseDbId: number | null = null;
+          // Map spouse relationship - only update if we have a valid spouse in the GEDCOM
           if (individual.spouse && individual.spouse.length > 0) {
             for (const spouseGedcomId of individual.spouse) {
               if (gedcomToDbMap.has(spouseGedcomId)) {
-                spouseDbId = gedcomToDbMap.get(spouseGedcomId)!;
-                break;
+                updateData.spouseId = gedcomToDbMap.get(spouseGedcomId);
+                break; // Take the first valid spouse
               }
             }
           }
-          updateData.spouseId = spouseDbId;
 
-          await storage.updateFamilyMember(dbId, updateData);
+          // Only update if we have relationships to set
+          if (Object.keys(updateData).length > 0) {
+            await storage.updateFamilyMember(dbId, updateData);
+          }
         } catch (relationshipError) {
           console.error(`Error updating relationships for individual ${individual.id}:`, relationshipError);
         }

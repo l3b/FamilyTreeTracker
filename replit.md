@@ -131,6 +131,8 @@ This is a comprehensive Arabic family genealogy platform designed to help Arabic
 - July 09, 2025: Fixed member profile loading and navigation issues
 - July 09, 2025: Fixed gender validation issue with automatic gender determination based on relationships
 - July 09, 2025: Improved Arabic terminology by changing "أطفال" to "أبناء" and "إضافة طفل" to "إضافة ابن" throughout the interface
+- July 10, 2025: Fixed DOM nesting warnings by replacing all nested Link components with div + onClick navigation patterns
+- July 10, 2025: Enhanced GEDCOM import relationship processing to only update valid relationships, preventing overwriting of existing database relationships with null values
 
 ## User Preferences
 
