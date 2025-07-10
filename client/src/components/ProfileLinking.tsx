@@ -81,6 +81,28 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
     member.userId === currentUser.id || !member.userId
   );
 
+  // Function to format name display
+  const formatDisplayName = (member: any) => {
+    if (member.arabicName) {
+      return member.arabicName;
+    }
+    
+    // Build Arabic-style name from components
+    const firstName = member.firstName || '';
+    const fatherName = member.fatherName || '';
+    const lastName = member.lastName || '';
+    
+    if (firstName && fatherName) {
+      return `${firstName} بن ${fatherName}${lastName ? ` ${lastName}` : ''}`;
+    } else if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (firstName) {
+      return firstName;
+    }
+    
+    return 'غير محدد';
+  };
+
   // Smart Arabic name search function
   const searchMembers = useMemo(() => {
     if (!searchQuery.trim()) return availableMembers;
@@ -95,23 +117,41 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
       const fatherName = member.fatherName || '';
       const fullEnglishName = `${firstName} ${lastName}`.trim();
       
-      // Create searchable text combinations
+      // Create all possible searchable text combinations
       const searchableTexts = [
+        // Original names
         arabicName,
         firstName,
         lastName,
         fatherName,
         fullEnglishName,
-        // Arabic name variations
-        arabicName.replace(/\s+بن\s+/g, ' '), // Remove "بن" connectors
-        arabicName.replace(/\s+/g, ''), // Remove all spaces
-        // Combine first name with father name (common search pattern)
+        
+        // Arabic name variations (remove بن and normalize spaces)
+        arabicName.replace(/\s+بن\s+/g, ' '),
+        arabicName.replace(/\s+/g, ' ').trim(),
+        arabicName.replace(/بن/g, '').replace(/\s+/g, ' ').trim(),
+        
+        // Common Arabic name combinations
         `${firstName} ${fatherName}`.trim(),
         `${firstName} بن ${fatherName}`.trim(),
-        // English name with Arabic father name
-        `${firstName} ${fatherName}`,
-        `${firstName} بن ${fatherName}`,
-      ].filter(Boolean);
+        `${firstName} ${fatherName} ${lastName}`.trim(),
+        `${firstName} بن ${fatherName} ${lastName}`.trim(),
+        
+        // Name parts without connectors
+        `${firstName} ${fatherName} ${lastName}`.replace(/\s+/g, ' ').trim(),
+        
+        // Reverse order combinations (father first)
+        `${fatherName} ${firstName}`.trim(),
+        
+        // Full name constructions
+        formatDisplayName(member),
+        formatDisplayName(member).replace(/\s+بن\s+/g, ' '),
+        
+      ].filter(text => text && text.length > 0);
+
+      // Normalize query by removing extra spaces and بن
+      const normalizedQuery = query.replace(/\s+بن\s+/g, ' ').replace(/\s+/g, ' ').trim();
+      const queryWithoutBin = query.replace(/بن/g, '').replace(/\s+/g, ' ').trim();
 
       // Check if query matches any of the searchable texts
       return searchableTexts.some(text => {
@@ -119,16 +159,38 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
         
         const normalizedText = text.toLowerCase().trim();
         
-        // Direct substring match
+        // Direct substring match (most common case)
         if (normalizedText.includes(query)) return true;
+        if (normalizedText.includes(normalizedQuery)) return true;
+        if (normalizedText.includes(queryWithoutBin)) return true;
         
-        // Split query into words and check if all words are present
-        const queryWords = query.split(/\s+/).filter(word => word.length > 0);
-        const textWords = normalizedText.split(/\s+/).filter(word => word.length > 0);
+        // Remove بن from text and try again
+        const textWithoutBin = normalizedText.replace(/بن/g, '').replace(/\s+/g, ' ').trim();
+        if (textWithoutBin.includes(query)) return true;
+        if (textWithoutBin.includes(normalizedQuery)) return true;
+        if (textWithoutBin.includes(queryWithoutBin)) return true;
         
-        // Check if all query words are found in the text
-        return queryWords.every(queryWord => 
+        // Split into words and check for partial matches
+        const queryWords = normalizedQuery.split(/\s+/).filter(word => word.length > 1);
+        const textWords = normalizedText.split(/\s+/).filter(word => word.length > 1);
+        
+        if (queryWords.length === 0) return false;
+        
+        // Check if all query words are found in the text (partial matching)
+        const allWordsFound = queryWords.every(queryWord => 
           textWords.some(textWord => 
+            textWord.includes(queryWord) || queryWord.includes(textWord)
+          )
+        );
+        
+        if (allWordsFound) return true;
+        
+        // Try without بن in words
+        const queryWordsNoBin = queryWithoutBin.split(/\s+/).filter(word => word.length > 1);
+        const textWordsNoBin = textWithoutBin.split(/\s+/).filter(word => word.length > 1);
+        
+        return queryWordsNoBin.every(queryWord => 
+          textWordsNoBin.some(textWord => 
             textWord.includes(queryWord) || queryWord.includes(textWord)
           )
         );
@@ -163,7 +225,7 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
               </Avatar>
               <div>
                 <p className="font-medium">
-                  {linkedProfile.arabicName || `${linkedProfile.firstName} ${linkedProfile.lastName || ''}`}
+                  {formatDisplayName(linkedProfile)}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   مرتبط بحسابك
@@ -210,7 +272,7 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
                 <div className="relative mb-4">
                   <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="ابحث بالاسم... (مثال: عبدالله عادل أو عبدالله بن عادل)"
+                    placeholder="ابحث بالاسم الكامل أو جزء منه... (مثال: عبدالله عادل، أو عبدالله بن عادل، أو عبدالله عادل محمد)"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pr-10"
@@ -245,7 +307,7 @@ export default function ProfileLinking({ currentUser, familyMembers }: ProfileLi
                         </Avatar>
                         <div className="flex-1">
                           <p className="font-medium">
-                            {member.arabicName || `${member.firstName} ${member.lastName || ''}`}
+                            {formatDisplayName(member)}
                           </p>
                           {member.birthDate && (
                             <p className="text-sm text-muted-foreground">
