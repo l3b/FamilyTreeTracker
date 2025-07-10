@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+import { Crown } from "lucide-react";
 
 interface FamilyViewProps {
   members: any[];
@@ -14,48 +17,23 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
   const { user } = useAuth();
   const [localCenterPerson, setLocalCenterPerson] = useState<any>(null);
 
-  // Find or create the main user profile
-  const getMainProfile = () => {
-    if (!user) return null;
-    
-    // Look for existing main profile
-    let mainProfile = members.find((m: any) => 
-      (m.firstName === (user as any).firstName && m.lastName === (user as any).lastName) ||
-      m.notes?.includes('Main Profile') ||
-      m.userId === (user as any).id
-    );
+  // Get linked profile
+  const { data: linkedProfile } = useQuery({
+    queryKey: ["/api/auth/linked-profile"],
+    retry: false,
+  });
 
-    // If no main profile exists, create a virtual one from user data
-    if (!mainProfile && user) {
-      mainProfile = {
-        id: 'main',
-        firstName: (user as any).firstName || 'المستخدم',
-        lastName: (user as any).lastName || 'الرئيسي',
-        arabicName: (user as any).arabicName || `${(user as any).firstName} ${(user as any).lastName}`,
-        profileImageUrl: (user as any).profileImageUrl,
-        userId: (user as any).id,
-        isMainProfile: true,
-        birthDate: null,
-        gender: null,
-        occupation: null,
-      };
-    }
-
-    return mainProfile;
-  };
-
-  const mainProfile = getMainProfile();
-  const currentCenter = propCenterPerson || localCenterPerson || mainProfile;
+  const currentCenter = propCenterPerson || localCenterPerson || linkedProfile || members[0];
 
   if (!currentCenter) {
     return (
       <div className="text-center p-8">
-        <h3 className="text-xl font-semibold text-heritage-brown mb-4">أنشئ ملفك الشخصي</h3>
+        <h3 className="text-xl font-semibold text-heritage-brown mb-4">لا توجد أفراد في العائلة</h3>
         <button 
-          onClick={() => onAddMember('self')}
+          onClick={() => onAddMember('person')}
           className="bg-heritage-brown text-white px-6 py-3 rounded-lg hover:bg-heritage-dark transition-colors"
         >
-          إنشاء الملف الشخصي
+          إضافة فرد جديد
         </button>
       </div>
     );
@@ -117,6 +95,7 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
     }
 
     const isCenter = person.id === currentCenter.id;
+    const isLinkedProfile = linkedProfile && person.id === linkedProfile.id;
     
     return (
       <div className="flex flex-col items-center group relative">
@@ -125,6 +104,7 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
           className={`
             ${size === 'lg' ? 'w-24 h-24' : size === 'md' ? 'w-20 h-20' : 'w-16 h-16'}
             ${isCenter ? 'border-4 border-heritage-brown bg-heritage-light' : 'border-2 border-blue-300 bg-blue-50'}
+            ${isLinkedProfile ? 'ring-2 ring-green-500' : ''}
             rounded-lg flex items-center justify-center relative cursor-pointer
             hover:shadow-lg transition-all overflow-hidden
           `}
@@ -138,6 +118,13 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
           ) : (
             <div className={`${isCenter ? 'text-heritage-brown' : 'text-blue-600'} text-lg`}>
               <i className={`fas ${person.gender === 'ذكر' ? 'fa-male' : person.gender === 'أنثى' ? 'fa-female' : 'fa-user'}`}></i>
+            </div>
+          )}
+          
+          {/* Linked profile indicator */}
+          {isLinkedProfile && (
+            <div className="absolute -top-1 -left-1 bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+              <Crown className="h-3 w-3" />
             </div>
           )}
           
@@ -161,6 +148,11 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
           </Link>
           {person.arabicName && person.arabicName !== `${person.firstName} ${person.lastName}` && (
             <div className="text-xs text-gray-500">{person.arabicName}</div>
+          )}
+          {isLinkedProfile && (
+            <Badge variant="secondary" className="text-xs mt-1">
+              حسابك
+            </Badge>
           )}
           {person.birthDate && (
             <div className="text-xs text-gray-400">

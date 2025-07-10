@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Crown } from "lucide-react";
 
 interface CompactFamilyViewProps {
   members: any[];
@@ -25,49 +28,13 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
     siblings: false
   });
 
-  // Find the user's record in the family tree (fallback if no centerPerson prop)
-  useEffect(() => {
-    if (!propCenterPerson && user && members.length > 0) {
-      const userRecord = members.find(member => member.userId === user.id);
-      if (userRecord) {
-        setLocalCenterPerson(userRecord);
-      } else {
-        // If user not found, center on first member
-        setLocalCenterPerson(members[0]);
-      }
-    }
-  }, [user, members, propCenterPerson]);
+  // Get linked profile
+  const { data: linkedProfile } = useQuery({
+    queryKey: ["/api/auth/linked-profile"],
+    retry: false,
+  });
 
-  // Find or create the main user profile
-  const getMainProfile = () => {
-    if (!user) return null;
-    
-    let mainProfile = members.find((m: any) => 
-      (m.firstName === (user as any).firstName && m.lastName === (user as any).lastName) ||
-      m.notes?.includes('Main Profile') ||
-      m.userId === (user as any).id
-    );
-
-    if (!mainProfile && user) {
-      mainProfile = {
-        id: 'main',
-        firstName: (user as any).firstName || 'المستخدم',
-        lastName: (user as any).lastName || 'الرئيسي',
-        arabicName: (user as any).arabicName || `${(user as any).firstName} ${(user as any).lastName}`,
-        profileImageUrl: (user as any).profileImageUrl,
-        userId: (user as any).id,
-        isMainProfile: true,
-        birthDate: null,
-        gender: null,
-        occupation: null,
-      };
-    }
-
-    return mainProfile;
-  };
-
-  const mainProfile = getMainProfile();
-  const currentCenter = propCenterPerson || localCenterPerson || mainProfile;
+  const currentCenter = propCenterPerson || localCenterPerson || linkedProfile || members[0];
 
   // Enhanced Arabic name search - includes father's and grandfather's names
   const getFullArabicName = (member: any) => {
@@ -169,6 +136,7 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
     }
 
     const isCenter = person.id === currentCenter.id;
+    const isLinkedProfile = linkedProfile && person.id === linkedProfile.id;
     
     return (
       <div className="flex flex-col items-center group relative p-2">
@@ -177,6 +145,7 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
           className={`
             ${size === 'lg' ? 'w-16 h-16' : size === 'md' ? 'w-12 h-12' : 'w-10 h-10'}
             ${isCenter ? 'border-3 border-heritage-brown bg-heritage-light' : 'border-2 border-blue-300 bg-blue-50'}
+            ${isLinkedProfile ? 'ring-2 ring-green-500' : ''}
             rounded-lg flex items-center justify-center relative cursor-pointer
             hover:shadow-md transition-all overflow-hidden
           `}
@@ -190,6 +159,13 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
           ) : (
             <div className={`${isCenter ? 'text-heritage-brown' : 'text-blue-600'} ${size === 'lg' ? 'text-lg' : 'text-sm'}`}>
               <i className={`fas ${person.gender === 'male' || person.gender === 'ذكر' ? 'fa-male' : person.gender === 'female' || person.gender === 'أنثى' ? 'fa-female' : 'fa-user'}`}></i>
+            </div>
+          )}
+          
+          {/* Linked profile indicator */}
+          {isLinkedProfile && (
+            <div className="absolute -top-1 -left-1 bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+              <Crown className="h-2 w-2" />
             </div>
           )}
           
@@ -222,6 +198,11 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
           <Link href={`/member/${person.id}`} className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'} truncate max-w-[60px] hover:underline cursor-pointer block`}>
             {person.firstName}
           </Link>
+          {isLinkedProfile && (
+            <Badge variant="secondary" className="text-xs mt-1">
+              حسابك
+            </Badge>
+          )}
           {person.birthDate && (
             <div className="text-xs text-gray-400">
               {new Date(person.birthDate).getFullYear()}
@@ -252,7 +233,7 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
       <div className="bg-gradient-to-r from-heritage-light to-heritage-beige border border-heritage-brown rounded-lg p-3 mb-4">
         <div className="text-center">
           <div className="text-sm font-semibold text-heritage-brown mb-2">
-            اختر نفسك من الشجرة
+            {linkedProfile ? 'تغيير المركز' : 'اختر شخصاً من الشجرة'}
           </div>
           
           {/* Search Input */}
@@ -355,7 +336,9 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
               )}
             </div>
             <div className="text-center">
-              <div className="text-xs text-heritage-brown mb-2 font-semibold">أنت</div>
+              <div className="text-xs text-heritage-brown mb-2 font-semibold">
+                {linkedProfile && currentCenter.id === linkedProfile.id ? 'أنت' : 'المركز'}
+              </div>
               {renderPersonCard(currentCenter, 'أنت', 'lg')}
             </div>
           </div>

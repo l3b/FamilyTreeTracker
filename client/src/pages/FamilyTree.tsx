@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import AddMemberForm from "@/components/AddMemberForm";
@@ -12,7 +13,7 @@ import FamilyView from "@/components/FamilyView";
 import CompactFamilyView from "@/components/CompactFamilyView";
 import GedcomUpload from "@/components/GedcomUpload";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, Upload, Trash2 } from "lucide-react";
+import { Plus, Upload, Trash2, Users, UserCheck } from "lucide-react";
 
 type TreeView = 'compact' | 'family' | 'pedigree' | 'fan';
 
@@ -22,6 +23,7 @@ export default function FamilyTree() {
   const [currentView, setCurrentView] = useState<TreeView>('compact');
   const [relationshipContext, setRelationshipContext] = useState<{ type: string; relatedTo?: number } | null>(null);
   const [centerPerson, setCenterPerson] = useState<any>(null);
+  const [showMalesOnly, setShowMalesOnly] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -30,23 +32,29 @@ export default function FamilyTree() {
     queryKey: ["/api/family-members"],
   }) as { data: any[], isLoading: boolean };
 
-  // Identify the logged-in user in the family tree and set as center person
+  // Get linked profile
+  const { data: linkedProfile } = useQuery({
+    queryKey: ["/api/auth/linked-profile"],
+    retry: false,
+  });
+
+  // Filter members based on male-only view
+  const filteredMembers = showMalesOnly 
+    ? members.filter(member => member.gender === 'male' || member.gender === 'ذكر')
+    : members;
+
+  // Set center person to linked profile or first member
   useEffect(() => {
-    if (user && members.length > 0 && !centerPerson) {
-      // Try to find the user by ID first, then by email
-      const userInTree = members.find(member => 
-        member.userId === user.id || 
-        member.email === user.email
-      );
-      
-      if (userInTree) {
-        setCenterPerson(userInTree);
+    if (members.length > 0 && !centerPerson) {
+      if (linkedProfile) {
+        // Use linked profile as center
+        setCenterPerson(linkedProfile);
       } else {
-        // If user not found in tree, center on first member
+        // If no linked profile, center on first member
         setCenterPerson(members[0]);
       }
     }
-  }, [user, members, centerPerson]);
+  }, [linkedProfile, members, centerPerson]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -127,7 +135,7 @@ export default function FamilyTree() {
       case 'compact':
         return (
           <CompactFamilyView 
-            members={members} 
+            members={filteredMembers} 
             onDeleteMember={(id) => deleteMutation.mutate(id)}
             onAddMember={handleAddMember}
             centerPerson={centerPerson}
@@ -137,7 +145,7 @@ export default function FamilyTree() {
       case 'family':
         return (
           <FamilyView 
-            members={members} 
+            members={filteredMembers} 
             onDeleteMember={(id) => deleteMutation.mutate(id)}
             onAddMember={handleAddMember}
             centerPerson={centerPerson}
@@ -150,7 +158,7 @@ export default function FamilyTree() {
             <h3 className="text-xl font-semibold text-heritage-brown mb-4">عرض النسب</h3>
             <p className="text-gray-600 mb-4">قريباً - عرض شجرة النسب التقليدي</p>
             <FamilyTreeView 
-              members={members} 
+              members={filteredMembers} 
               onDeleteMember={(id) => deleteMutation.mutate(id)}
             />
           </div>
@@ -177,52 +185,70 @@ export default function FamilyTree() {
           <p className="text-lg text-heritage-dark">اكتشف تاريخ عائلتك وروابطها</p>
         </div>
 
-        {/* View Switcher - MyHeritage Style */}
-        <div className="flex justify-center gap-2 mb-6">
-          <Button 
-            onClick={() => setCurrentView('compact')}
-            variant={currentView === 'compact' ? 'default' : 'outline'}
-            className={currentView === 'compact' 
-              ? 'bg-heritage-brown hover:bg-heritage-dark text-white' 
-              : 'border-heritage-brown text-heritage-brown hover:bg-heritage-light'
-            }
-          >
-            <i className="fas fa-compress-alt mr-2"></i>
-            العرض المبسط
-          </Button>
-          <Button 
-            onClick={() => setCurrentView('family')}
-            variant={currentView === 'family' ? 'default' : 'outline'}
-            className={currentView === 'family' 
-              ? 'bg-heritage-brown hover:bg-heritage-dark text-white' 
-              : 'border-heritage-brown text-heritage-brown hover:bg-heritage-light'
-            }
-          >
-            <i className="fas fa-users mr-2"></i>
-            عرض العائلة
-          </Button>
-          <Button 
-            onClick={() => setCurrentView('pedigree')}
-            variant={currentView === 'pedigree' ? 'default' : 'outline'}
-            className={currentView === 'pedigree' 
-              ? 'bg-heritage-brown hover:bg-heritage-dark text-white' 
-              : 'border-heritage-brown text-heritage-brown hover:bg-heritage-light'
-            }
-          >
-            <i className="fas fa-sitemap mr-2"></i>
-            عرض النسب
-          </Button>
-          <Button 
-            onClick={() => setCurrentView('fan')}
-            variant={currentView === 'fan' ? 'default' : 'outline'}
-            className={currentView === 'fan' 
-              ? 'bg-heritage-brown hover:bg-heritage-dark text-white' 
-              : 'border-heritage-brown text-heritage-brown hover:bg-heritage-light'
-            }
-          >
+        {/* View Switcher and Filter Controls */}
+        <div className="flex flex-wrap justify-center gap-2 mb-6">
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setCurrentView('compact')}
+              variant={currentView === 'compact' ? 'default' : 'outline'}
+              className={currentView === 'compact' 
+                ? 'bg-heritage-brown hover:bg-heritage-dark text-white' 
+                : 'border-heritage-brown text-heritage-brown hover:bg-heritage-light'
+              }
+            >
+              <i className="fas fa-compress-alt mr-2"></i>
+              العرض المبسط
+            </Button>
+            <Button 
+              onClick={() => setCurrentView('family')}
+              variant={currentView === 'family' ? 'default' : 'outline'}
+              className={currentView === 'family' 
+                ? 'bg-heritage-brown hover:bg-heritage-dark text-white' 
+                : 'border-heritage-brown text-heritage-brown hover:bg-heritage-light'
+              }
+            >
+              <i className="fas fa-users mr-2"></i>
+              عرض العائلة
+            </Button>
+            <Button 
+              onClick={() => setCurrentView('pedigree')}
+              variant={currentView === 'pedigree' ? 'default' : 'outline'}
+              className={currentView === 'pedigree' 
+                ? 'bg-heritage-brown hover:bg-heritage-dark text-white' 
+                : 'border-heritage-brown text-heritage-brown hover:bg-heritage-light'
+              }
+            >
+              <i className="fas fa-sitemap mr-2"></i>
+              عرض النسب
+            </Button>
+            <Button 
+              onClick={() => setCurrentView('fan')}
+              variant={currentView === 'fan' ? 'default' : 'outline'}
+              className={currentView === 'fan' 
+                ? 'bg-heritage-brown hover:bg-heritage-dark text-white' 
+                : 'border-heritage-brown text-heritage-brown hover:bg-heritage-light'
+              }
+            >
             <i className="fas fa-fan mr-2"></i>
             العرض المروحي
           </Button>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowMalesOnly(!showMalesOnly)}
+              variant={showMalesOnly ? 'default' : 'outline'}
+              className="gap-2"
+            >
+              <UserCheck className="h-4 w-4" />
+              {showMalesOnly ? 'إظهار الكل' : 'الرجال فقط'}
+            </Button>
+            {showMalesOnly && (
+              <Badge variant="secondary" className="self-center">
+                {filteredMembers.length} رجل
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Action Buttons */}
