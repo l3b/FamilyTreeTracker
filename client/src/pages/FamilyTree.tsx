@@ -150,6 +150,7 @@ export default function FamilyTree() {
             onAddMember={handleAddMember}
             centerPerson={centerPerson}
             onCenterChange={setCenterPerson}
+            showMalesOnly={showMalesOnly}
           />
         );
       case 'pedigree':
