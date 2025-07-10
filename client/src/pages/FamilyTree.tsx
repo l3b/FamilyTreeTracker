@@ -5,6 +5,8 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import AddMemberForm from "@/components/AddMemberForm";
@@ -134,12 +136,13 @@ export default function FamilyTree() {
     switch (currentView) {
       case 'compact':
         return (
-          <CompactFamilyView 
-            members={filteredMembers} 
+          <CompactFamilyView
+            members={filteredMembers}
             onDeleteMember={(id) => deleteMutation.mutate(id)}
             onAddMember={handleAddMember}
             centerPerson={centerPerson}
             onCenterChange={setCenterPerson}
+            showMalesOnly={showMalesOnly}
           />
         );
       case 'family':
@@ -235,20 +238,13 @@ export default function FamilyTree() {
           </Button>
           </div>
           
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setShowMalesOnly(!showMalesOnly)}
-              variant={showMalesOnly ? 'default' : 'outline'}
-              className="gap-2"
-            >
-              <UserCheck className="h-4 w-4" />
-              {showMalesOnly ? 'إظهار الكل' : 'الرجال فقط'}
-            </Button>
-            {showMalesOnly && (
-              <Badge variant="secondary" className="self-center">
-                {filteredMembers.length} رجل
-              </Badge>
-            )}
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="male-only-switch"
+              checked={showMalesOnly}
+              onCheckedChange={setShowMalesOnly}
+            />
+            <Label htmlFor="male-only-switch">عرض الذكور فقط</Label>
           </div>
         </div>
 

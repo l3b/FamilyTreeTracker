@@ -52,11 +52,11 @@ function processRelationships(individuals: GedcomIndividual[], families: GedcomF
     if ((individual as any).parentFamily) {
       const parentFamily = familyMap.get((individual as any).parentFamily);
       if (parentFamily) {
-        if (parentFamily.husband) {
+        if (parentFamily.husband && !individual.father) {
           individual.father = parentFamily.husband;
           console.log(`Set father for ${individual.name}: ${parentFamily.husband}`);
         }
-        if (parentFamily.wife) {
+        if (parentFamily.wife && !individual.mother) {
           individual.mother = parentFamily.wife;
           console.log(`Set mother for ${individual.name}: ${parentFamily.wife}`);
         }
@@ -217,6 +217,19 @@ function parseGedcom(gedcomText: string): ParsedGedcom {
           break;
         case 'MARR':
           currentSubRecord = 'MARR';
+          break;
+        case '_FREL':
+          // Custom tag for father relationship - value is GEDCOM ID
+          currentRecord.father = value.replace(/[@]/g, '');
+          break;
+        case '_MREL':
+          // Custom tag for mother relationship - value is GEDCOM ID
+          currentRecord.mother = value.replace(/[@]/g, '');
+          break;
+        case 'SPOUSE':
+          // Custom tag referencing a spouse by GEDCOM ID
+          if (!currentRecord.spouse) currentRecord.spouse = [];
+          currentRecord.spouse.push(value.replace(/[@]/g, ''));
           break;
         case 'FAMC':
           // Family as Child - parent family
@@ -621,7 +634,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const news = await storage.getFamilyNews(userId);
-      res.json(news);
+      const newsWithCounts = await Promise.all(
+        news.map(async (n) => {
+          const likes = await storage.getFamilyNewsLikes(n.id);
+          const comments = await storage.getFamilyNewsComments(n.id);
+          return { ...n, likesCount: likes, commentsCount: comments.length };
+        })
+      );
+      res.json(newsWithCounts);
     } catch (error) {
       console.error("Error fetching family news:", error);
       res.status(500).json({ message: "Failed to fetch family news" });
@@ -648,6 +668,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating family news:", error);
       res.status(500).json({ message: "Failed to create family news" });
+    }
+  });
+
+  app.post("/api/family-news/:id/like", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const newsId = parseInt(req.params.id);
+      await storage.likeFamilyNews(newsId, userId);
+      const count = await storage.getFamilyNewsLikes(newsId);
+      res.json({ likes: count });
+    } catch (error) {
+      console.error("Error liking news:", error);
+      res.status(500).json({ message: "Failed to like news" });
+    }
+  });
+
+  app.delete("/api/family-news/:id/like", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const newsId = parseInt(req.params.id);
+      await storage.unlikeFamilyNews(newsId, userId);
+      const count = await storage.getFamilyNewsLikes(newsId);
+      res.json({ likes: count });
+    } catch (error) {
+      console.error("Error unliking news:", error);
+      res.status(500).json({ message: "Failed to unlike news" });
+    }
+  });
+
+  app.post("/api/family-news/:id/comments", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const newsId = parseInt(req.params.id);
+      const { content } = req.body;
+      if (!content) return res.status(400).json({ message: "Content required" });
+      const comment = await storage.createFamilyNewsComment({ newsId, userId, content });
+      res.json(comment);
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      res.status(500).json({ message: "Failed to add comment" });
+    }
+  });
+
+  app.get("/api/family-news/:id/comments", isAuthenticated, async (req: any, res) => {
+    try {
+      const newsId = parseInt(req.params.id);
+      const comments = await storage.getFamilyNewsComments(newsId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
     }
   });
 
@@ -848,13 +919,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clearExisting = req.body.clearExisting === 'true';
       
       // Get existing family members
-      const existingMembers = await storage.getFamilyMembers(userId);
+      let existingMembers = await storage.getFamilyMembers(userId);
       
       // Clear existing data if requested
       let clearedCount = 0;
       if (clearExisting && existingMembers.length > 0) {
         console.log(`Clearing ${existingMembers.length} existing family members for fresh import`);
-        
+
         try {
           // First, clear all relationship references to avoid foreign key conflicts
           await db.update(familyMembers)
@@ -868,8 +939,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Then delete all members for this user
           await db.delete(familyMembers)
             .where(eq(familyMembers.userId, userId));
-          
+
           clearedCount = existingMembers.length;
+          // Reset existing members array since we've removed them
+          existingMembers = [];
         } catch (clearError) {
           console.error('Error clearing existing members:', clearError);
           throw new Error('Failed to clear existing family members');
@@ -977,41 +1050,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!dbId) continue;
 
           const updateData: any = {};
-          
-          // Set father relationship - verify ID exists in database
+
+          // Map father relationship
           if (individual.father && gedcomToDbMap.has(individual.father)) {
-            const fatherId = gedcomToDbMap.get(individual.father);
-            // Double-check the father exists in database
-            const fatherExists = await storage.getFamilyMember(fatherId!);
-            if (fatherExists) {
-              updateData.fatherId = fatherId;
-            }
-          }
-          
-          // Set mother relationship - verify ID exists in database
-          if (individual.mother && gedcomToDbMap.has(individual.mother)) {
-            const motherId = gedcomToDbMap.get(individual.mother);
-            // Double-check the mother exists in database
-            const motherExists = await storage.getFamilyMember(motherId!);
-            if (motherExists) {
-              updateData.motherId = motherId;
-            }
-          }
-          
-          // Set spouse relationship (take first spouse if multiple)
-          if (individual.spouse && individual.spouse.length > 0 && gedcomToDbMap.has(individual.spouse[0])) {
-            const spouseId = gedcomToDbMap.get(individual.spouse[0]);
-            // Double-check the spouse exists in database
-            const spouseExists = await storage.getFamilyMember(spouseId!);
-            if (spouseExists) {
-              updateData.spouseId = spouseId;
-            }
+            updateData.fatherId = gedcomToDbMap.get(individual.father);
+          } else {
+            updateData.fatherId = null;
           }
 
-          // Update if there are relationships to set
-          if (Object.keys(updateData).length > 0) {
-            await storage.updateFamilyMember(dbId, updateData);
+          // Map mother relationship
+          if (individual.mother && gedcomToDbMap.has(individual.mother)) {
+            updateData.motherId = gedcomToDbMap.get(individual.mother);
+          } else {
+            updateData.motherId = null;
           }
+
+          // Map spouse relationship (take first available)
+          let spouseDbId: number | null = null;
+          if (individual.spouse && individual.spouse.length > 0) {
+            for (const spouseGedcomId of individual.spouse) {
+              if (gedcomToDbMap.has(spouseGedcomId)) {
+                spouseDbId = gedcomToDbMap.get(spouseGedcomId)!;
+                break;
+              }
+            }
+          }
+          updateData.spouseId = spouseDbId;
+
+          await storage.updateFamilyMember(dbId, updateData);
         } catch (relationshipError) {
           console.error(`Error updating relationships for individual ${individual.id}:`, relationshipError);
         }

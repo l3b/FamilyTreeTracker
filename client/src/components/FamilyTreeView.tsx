@@ -97,9 +97,12 @@ export default function FamilyTreeView({ members, onDeleteMember }: FamilyTreeVi
         </div>
         
         <div className="mt-2 text-center min-w-[80px]">
-          <Link href={`/member/${member.id}`} className="text-xs font-medium text-heritage-dark truncate hover:underline cursor-pointer block">
+          <div 
+            onClick={() => window.location.href = `/member/${member.id}`}
+            className="text-xs font-medium text-heritage-dark truncate hover:underline cursor-pointer block"
+          >
             {member.firstName} {member.lastName}
-          </Link>
+          </div>
           {member.arabicName && member.arabicName !== `${member.firstName} ${member.lastName}` && (
             <div className="text-xs text-gray-500 truncate">{member.arabicName}</div>
           )}

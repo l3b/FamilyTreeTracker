@@ -94,6 +94,23 @@ export const familyNews = pgTable("family_news", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Likes on family news articles
+export const familyNewsLikes = pgTable("family_news_likes", {
+  id: serial("id").primaryKey(),
+  newsId: integer("news_id").references(() => familyNews.id),
+  userId: varchar("user_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Comments on family news articles
+export const familyNewsComments = pgTable("family_news_comments", {
+  id: serial("id").primaryKey(),
+  newsId: integer("news_id").references(() => familyNews.id),
+  userId: varchar("user_id").references(() => users.id),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Family documents table
 export const familyDocuments = pgTable("family_documents", {
   id: serial("id").primaryKey(),
@@ -163,6 +180,12 @@ export type FamilyMember = typeof familyMembers.$inferSelect;
 export type InsertFamilyNews = typeof familyNews.$inferInsert;
 export type FamilyNews = typeof familyNews.$inferSelect;
 
+export type InsertFamilyNewsLike = typeof familyNewsLikes.$inferInsert;
+export type FamilyNewsLike = typeof familyNewsLikes.$inferSelect;
+
+export type InsertFamilyNewsComment = typeof familyNewsComments.$inferInsert;
+export type FamilyNewsComment = typeof familyNewsComments.$inferSelect;
+
 export type InsertFamilyDocument = typeof familyDocuments.$inferInsert;
 export type FamilyDocument = typeof familyDocuments.$inferSelect;
 
@@ -183,6 +206,16 @@ export const insertFamilyNewsSchema = createInsertSchema(familyNews).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertFamilyNewsLikeSchema = createInsertSchema(familyNewsLikes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertFamilyNewsCommentSchema = createInsertSchema(familyNewsComments).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertFamilyDocumentSchema = createInsertSchema(familyDocuments).omit({

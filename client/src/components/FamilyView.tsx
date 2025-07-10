@@ -130,10 +130,32 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
 
 
 
-  const renderPersonCard = (person: any, relationship: string, size: 'sm' | 'md' | 'lg' = 'md', onClickAdd?: () => void) => {
+  const renderPersonCard = (
+    person: any,
+    relationship: string,
+    size: 'sm' | 'md' | 'lg' = 'md',
+    onClickAdd?: () => void,
+    filteredOut: boolean = false
+  ) => {
     if (!person) {
+      if (filteredOut) {
+        return (
+          <div className="flex flex-col items-center">
+            <div
+              className={`
+                ${size === 'lg' ? 'w-24 h-24' : size === 'md' ? 'w-20 h-20' : 'w-16 h-16'}
+                border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-100
+              `}
+            >
+              <i className="fas fa-user-slash text-gray-400"></i>
+            </div>
+            <div className="text-xs text-gray-400 mt-2 text-center">مخفي</div>
+          </div>
+        );
+      }
+
       return (
-        <div 
+        <div
           onClick={onClickAdd}
           className="flex flex-col items-center cursor-pointer group"
         >
@@ -200,9 +222,12 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
         </div>
         
         <div className="text-center mt-2 min-w-[80px]">
-          <Link href={`/member/${person.id}`} className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'} hover:underline cursor-pointer`}>
+          <div 
+            onClick={() => window.location.href = `/member/${person.id}`}
+            className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'} hover:underline cursor-pointer`}
+          >
             {person.firstName} {person.lastName}
-          </Link>
+          </div>
           {person.arabicName && person.arabicName !== `${person.firstName} ${person.lastName}` && (
             <div className="text-xs text-gray-500">{person.arabicName}</div>
           )}
@@ -289,27 +314,30 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
               )}
             </div>
             <div className="text-center">
-              {renderPersonCard(
+            {renderPersonCard(
                 relatives.paternalGrandmother,
                 'جدة الأب',
                 'sm',
-                () => onAddMember('paternalGrandmother', currentCenter.id)
+                showMalesOnly ? undefined : () => onAddMember('paternalGrandmother', currentCenter.id),
+                showMalesOnly && !relatives.paternalGrandmother
               )}
             </div>
             <div className="text-center">
-              {renderPersonCard(
+            {renderPersonCard(
                 relatives.maternalGrandfather,
                 'جد الأم',
                 'sm',
-                () => onAddMember('maternalGrandfather', currentCenter.id)
+                showMalesOnly ? undefined : () => onAddMember('maternalGrandfather', currentCenter.id),
+                showMalesOnly && !relatives.maternalGrandfather
               )}
             </div>
             <div className="text-center">
-              {renderPersonCard(
+            {renderPersonCard(
                 relatives.maternalGrandmother,
                 'جدة الأم',
                 'sm',
-                () => onAddMember('maternalGrandmother', currentCenter.id)
+                showMalesOnly ? undefined : () => onAddMember('maternalGrandmother', currentCenter.id),
+                showMalesOnly && !relatives.maternalGrandmother
               )}
             </div>
           </div>
@@ -333,7 +361,7 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
           <div className="grid grid-cols-4 gap-8 mb-8 relative" style={{ zIndex: 2 }}>
             <div></div>
             <div className="text-center">
-              {renderPersonCard(
+            {renderPersonCard(
                 relatives.father,
                 'الأب',
                 'md',
@@ -341,11 +369,12 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
               )}
             </div>
             <div className="text-center">
-              {renderPersonCard(
+            {renderPersonCard(
                 relatives.mother,
                 'الأم',
                 'md',
-                () => onAddMember('mother', currentCenter.id)
+                showMalesOnly ? undefined : () => onAddMember('mother', currentCenter.id),
+                showMalesOnly && !relatives.mother
               )}
             </div>
             <div></div>
@@ -362,11 +391,12 @@ export default function FamilyView({ members, onDeleteMember, onAddMember, cente
           {/* Center Person Row */}
           <div className="grid grid-cols-3 gap-8 mb-8 items-center relative" style={{ zIndex: 2 }}>
             <div className="text-center">
-              {renderPersonCard(
+            {renderPersonCard(
                 relatives.spouse,
                 'الزوج/الزوجة',
                 'md',
-                () => onAddMember('spouse', currentCenter.id)
+                showMalesOnly ? undefined : () => onAddMember('spouse', currentCenter.id),
+                showMalesOnly && !relatives.spouse
               )}
             </div>
             <div className="text-center">

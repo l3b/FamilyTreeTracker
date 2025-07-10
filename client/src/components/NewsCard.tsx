@@ -1,3 +1,7 @@
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
 interface NewsCardProps {
   news: any;
   compact?: boolean;
@@ -14,6 +18,45 @@ export default function NewsCard({ news, compact = false }: NewsCardProps) {
     if (diffDays < 7) return `منذ ${diffDays} أيام`;
     if (diffDays < 30) return `منذ ${Math.ceil(diffDays / 7)} أسابيع`;
     return date.toLocaleDateString('ar-SA');
+  };
+
+  const [likes, setLikes] = useState<number>(news.likesCount || 0);
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [showComments, setShowComments] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/family-news/${news.id}/comments`, { credentials: "include" })
+      .then((res) => res.json())
+      .then(setComments)
+      .catch(() => {});
+  }, [news.id]);
+
+  const handleLike = async () => {
+    const res = await fetch(`/api/family-news/${news.id}/like`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setLikes(data.likes);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!commentText.trim()) return;
+    const res = await fetch(`/api/family-news/${news.id}/comments`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: commentText }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setComments([data, ...comments]);
+      setCommentText("");
+      setShowComments(true);
+    }
   };
 
   if (compact) {
@@ -58,6 +101,40 @@ export default function NewsCard({ news, compact = false }: NewsCardProps) {
             <span>أضافه مدير العائلة</span>
           </div>
         </div>
+        <div className="flex items-center space-x-4 space-x-reverse mt-4">
+          <Button variant="ghost" size="sm" onClick={handleLike}>
+            <i className="fas fa-heart ml-2"></i>
+            {likes}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowComments(!showComments)}
+          >
+            <i className="fas fa-comment ml-2"></i>
+            {comments.length}
+          </Button>
+        </div>
+        {showComments && (
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Input
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="اكتب تعليقك"
+                className="flex-1"
+              />
+              <Button size="sm" onClick={handleAddComment}>
+                إرسال
+              </Button>
+            </div>
+            {comments.map((c) => (
+              <div key={c.id} className="border rounded p-2 text-sm">
+                {c.content}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

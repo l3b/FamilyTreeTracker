@@ -14,9 +14,10 @@ interface CompactFamilyViewProps {
   onAddMember: (relationship: string, relatedTo?: number) => void;
   centerPerson?: any;
   onCenterChange?: (person: any) => void;
+  showMalesOnly?: boolean;
 }
 
-export default function CompactFamilyView({ members, onDeleteMember, onAddMember, centerPerson: propCenterPerson, onCenterChange }: CompactFamilyViewProps) {
+export default function CompactFamilyView({ members, onDeleteMember, onAddMember, centerPerson: propCenterPerson, onCenterChange, showMalesOnly = false }: CompactFamilyViewProps) {
   const { user } = useAuth();
   const [localCenterPerson, setLocalCenterPerson] = useState<any>(null);
   const [showAllChildren, setShowAllChildren] = useState(false);
@@ -114,10 +115,32 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
 
   const family = getImmediateFamily(currentCenter);
 
-  const renderPersonCard = (person: any, relationship: string, size: 'sm' | 'md' | 'lg' = 'md', onClickAdd?: () => void) => {
+  const renderPersonCard = (
+    person: any,
+    relationship: string,
+    size: 'sm' | 'md' | 'lg' = 'md',
+    onClickAdd?: () => void,
+    filteredOut: boolean = false
+  ) => {
     if (!person) {
+      if (filteredOut) {
+        return (
+          <div className="flex flex-col items-center p-2">
+            <div
+              className={`
+                ${size === 'lg' ? 'w-16 h-16' : size === 'md' ? 'w-12 h-12' : 'w-10 h-10'}
+                border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-100
+              `}
+            >
+              <i className="fas fa-user-slash text-gray-400 text-sm"></i>
+            </div>
+            <div className="text-xs text-gray-400 mt-1 text-center">مخفي</div>
+          </div>
+        );
+      }
+
       return (
-        <div 
+        <div
           onClick={onClickAdd}
           className="flex flex-col items-center cursor-pointer group p-2"
         >
@@ -195,9 +218,12 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
         </div>
         
         <div className="text-center mt-1">
-          <Link href={`/member/${person.id}`} className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'} truncate max-w-[60px] hover:underline cursor-pointer block`}>
+          <div 
+            onClick={() => window.location.href = `/member/${person.id}`}
+            className={`text-xs font-medium ${isCenter ? 'text-heritage-brown' : 'text-gray-800'} truncate max-w-[60px] hover:underline cursor-pointer block`}
+          >
             {person.firstName}
-          </Link>
+          </div>
           {isLinkedProfile && (
             <Badge variant="secondary" className="text-xs mt-1">
               حسابك
@@ -319,7 +345,8 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
                 family.mother,
                 'إضافة الأم',
                 'md',
-                () => onAddMember('mother', currentCenter.id)
+                showMalesOnly ? undefined : () => onAddMember('mother', currentCenter.id),
+                showMalesOnly && !family.mother
               )}
             </div>
           </div>
@@ -332,7 +359,8 @@ export default function CompactFamilyView({ members, onDeleteMember, onAddMember
                 family.spouse,
                 'إضافة زوج/زوجة',
                 'md',
-                () => onAddMember('spouse', currentCenter.id)
+                showMalesOnly ? undefined : () => onAddMember('spouse', currentCenter.id),
+                showMalesOnly && !family.spouse
               )}
             </div>
             <div className="text-center">
